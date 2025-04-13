@@ -45,7 +45,7 @@ def crear_tablas():
         resena_personal TEXT,
         calificacion INTEGER,
         tipo TEXT,
-        adiquisicion TEXT,
+        adquisicion TEXT,
         FOREIGN KEY (autor_id) REFERENCES autores(id),
         FOREIGN KEY (genero_id) REFERENCES generos(id),
         FOREIGN KEY (editorial_id) REFERENCES editoriales(id)
