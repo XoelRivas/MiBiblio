@@ -1,41 +1,49 @@
 import sqlite3
 
+
 def crear_tablas():
     conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS autores (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre TEXT NOT NULL UNIQUE
+        nombre TEXT NOT NULL,
+        apellido TEXT NOT NULL,
+        UNIQUE(nombre, apellido)
     );
-    """)
-    
-    cursor.execute("""
+    """
+    )
+
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS generos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nombre TEXT NOT NULL UNIQUE
     );
-    """)
+    """
+    )
 
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS editoriales (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nombre TEXT NOT NULL UNIQUE
     );
-    """)
+    """
+    )
 
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS libros (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         titulo TEXT NOT NULL,
-        autor_id INTEGER,
-        genero_id INTEGER,
-        editorial_id INTEGER,
+        id_editorial INTEGER,
         fecha_publicacion TEXT,
         fecha_edicion TEXT,
         paginas INTEGER,
-        isbn TEXT,
+        isbn TEXT UNIQUE,
         serie TEXT,
         volumen INTEGER,
         fecha_comenzado TEXT,
@@ -46,14 +54,38 @@ def crear_tablas():
         calificacion INTEGER,
         tipo TEXT,
         adquisicion TEXT,
-        FOREIGN KEY (autor_id) REFERENCES autores(id),
-        FOREIGN KEY (genero_id) REFERENCES generos(id),
-        FOREIGN KEY (editorial_id) REFERENCES editoriales(id)
+        FOREIGN KEY (id_editorial) REFERENCES editoriales(id)
     );
-    """)
+    """
+    )
+
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS libros_autores (
+        id_libro INTEGER,
+        id_autor INTEGER,
+        PRIMARY KEY (id_libro, id_autor),
+        FOREIGN KEY (id_libro) REFERENCES libros(id),
+        FOREIGN KEY (id_autor) REFERENCES autores(id)
+    );    
+"""
+    )
+
+    cursor.execute(
+        """
+    CREATE TABLE IF NOT EXISTS libros_generos (
+        id_libro INTEGER,
+        id_genero INTEGER,
+        PRIMARY KEY (id_libro, id_genero),
+        FOREIGN KEY (id_libro) REFERENCES libros(id),
+        FOREIGN KEY (id_genero) REFERENCES generos(id)
+    );    
+"""
+    )
 
     conn.commit()
     conn.close()
+
 
 if __name__ == "__main__":
     crear_tablas()
