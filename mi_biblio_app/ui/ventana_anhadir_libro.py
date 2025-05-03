@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from PIL import Image
 from api import buscar_libros_por_titulo
+from database import insertar_editorial, insertar_autor, insertar_libro, relacionar_libro_autor
 
 class VentanaAnhadirLibro(ctk.CTkToplevel):
     def __init__(self, master):
@@ -54,4 +55,12 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
             boton.pack(fill="x", pady=2, padx=5)
 
     def seleccionar_libro(self, libro):
-        print("Libro seleccionado: ", libro)
+        id_editorial = None
+        id_libro = insertar_libro(libro, id_editorial)
+
+        if libro.get("autor"):
+            for autor in libro["autor"].split(","):
+                id_autor = insertar_autor(autor.strip())
+                relacionar_libro_autor(id_libro, id_autor)
+
+        ctk.CTkLabel(self.frame_resultados, text="✅ Libro guardado correctamente.").pack(pady=10)

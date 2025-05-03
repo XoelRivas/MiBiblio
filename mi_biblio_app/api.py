@@ -1,5 +1,16 @@
 import requests
 
+def extraer_isbn(doc):
+    if "isbn" in doc and isinstance(doc["isbn"], list):
+        return doc["isbn"][0]
+    
+    ia_list = doc.get("ia", [])
+    for item in ia_list:
+        if item.startswith("isbn"):
+            return item.replace("isbn_", "")
+
+    return None
+
 def buscar_libros_por_titulo(titulo, max_resultados=10):
     url = "https://openlibrary.org/search.json"
     params = {
@@ -14,11 +25,13 @@ def buscar_libros_por_titulo(titulo, max_resultados=10):
 
         resultados = []
         for doc in datos.get("docs", [])[:max_resultados]:
+            isbn = extraer_isbn(doc)
+            
             libro = {
                 "titulo": doc.get("title"),
                 "autor": ", ".join(doc.get("author_name", [])),
                 "anho": doc.get("first_publish_year"),
-                "isbn": doc.get("isbn", [None])[0],
+                "isbn": isbn,
                 "id_openlibrary": doc.get("key")
             }
 

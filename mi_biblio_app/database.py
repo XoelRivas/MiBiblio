@@ -86,6 +86,84 @@ def crear_tablas():
     conn.commit()
     conn.close()
 
+def insertar_editorial(nombre):
+    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    cursor = conn.cursor()
+
+    cursor.execute("INSERT OR IGNORE INTO editoriales (nombre) VALUES (?)", (nombre,))
+    conn.commit()
+
+    cursor.execute("SELECT id FROM editoriales WHERE nombre = ?", (nombre,))
+    id_editorial = cursor.fetchone()[0]
+
+    conn.close()
+    return id_editorial
+
+def insertar_autor(nombre_completo):
+    partes = nombre_completo.strip().split()
+    if len(partes) == 1:
+        nombre, apellido = partes[0], ""
+    else:
+        nombre = " ".join(partes[:-1])
+        apellido = partes[-1]
+
+    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "INSERT OR IGNORE INTO autores (nombre, apellido) VALUES (?, ?)",
+        (nombre, apellido)
+    )
+    conn.commit()
+
+    cursor.execute(
+        "SELECT id FROM autores WHERE nombre = ? AND apellido = ?",
+        (nombre, apellido)
+    )
+    id_autor = cursor.fetchone()[0]
+
+    conn.close()
+    return id_autor
+
+def insertar_libro(libro, id_editorial=None):
+    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT OR IGNORE INTO libros (
+            titulo, id_editorial, fecha_publicacion, isbn
+        ) VALUES (?, ?, ?, ?)
+    """, (
+        libro.get("titulo"),
+        id_editorial,
+        libro.get("anho"),
+        libro.get("isbn")
+    ))
+    conn.commit()
+
+    id_libro = cursor.lastrowid
+
+    if not id_libro:
+        cursor.execute(
+            "SELECT id FROM libros WHERE titulo = ? AND isbn IS ?",
+            (libro.get("titulo"), libro.get("isbn"))
+        )
+        resultado = cursor.fetchone()
+        id_libro = resultado[0] if resultado else None
+
+    conn.close()
+    return id_libro
+
+def relacionar_libro_autor(id_libro, id_autor):
+    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT OR IGNORE INTO libros_autores (id_libro, id_autor)
+        VALUES (?, ?)
+    """, (id_libro, id_autor))
+    conn.commit()
+    conn.close()
 
 if __name__ == "__main__":
     crear_tablas()
