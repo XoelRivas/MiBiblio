@@ -32,7 +32,8 @@ def buscar_libros_por_titulo(titulo, max_resultados=10):
                 "autor": ", ".join(doc.get("author_name", [])),
                 "anho": doc.get("first_publish_year"),
                 "isbn": isbn,
-                "id_openlibrary": doc.get("key")
+                "id_openlibrary": doc.get("key"),
+                "cover_id": doc.get("cover_i")
             }
 
             resultados.append(libro)

@@ -59,6 +59,11 @@ def crear_tablas():
     """
     )
 
+    try:
+        cursor.execute("ALTER TABLE libros ADD COLUMN cover_id INTEGER")
+    except sqlite3.OperationalError:
+        pass
+
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS libros_autores (
@@ -131,13 +136,14 @@ def insertar_libro(libro, id_editorial=None):
 
     cursor.execute("""
         INSERT OR IGNORE INTO libros (
-            titulo, id_editorial, fecha_publicacion, isbn
-        ) VALUES (?, ?, ?, ?)
+            titulo, id_editorial, fecha_publicacion, isbn, cover_id
+        ) VALUES (?, ?, ?, ?, ?)
     """, (
         libro.get("titulo"),
         id_editorial,
         libro.get("anho"),
-        libro.get("isbn")
+        libro.get("isbn"),
+        libro.get("cover_id")
     ))
     conn.commit()
 
@@ -164,6 +170,27 @@ def relacionar_libro_autor(id_libro, id_autor):
     """, (id_libro, id_autor))
     conn.commit()
     conn.close()
+
+def obtener_libros_guardados():
+    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT l.titulo, l.fecha_publicacion, l.isbn,
+           GROUP_CONCAT(a.nombre || ' ' || a.apellido, ', ') AS autor,
+           l.cover_id
+        FROM libros l
+        LEFT JOIN libros_autores la ON l.id = la.id_libro
+        LEFT JOIN autores a ON la.id_autor = a.id
+        GROUP BY l.id
+        ORDER BY l.titulo ASC
+    """)
+
+    libros = [dict(fila) for fila in cursor.fetchall()]
+
+    conn.close()
+    return libros
 
 if __name__ == "__main__":
     crear_tablas()
