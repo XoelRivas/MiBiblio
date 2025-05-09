@@ -26,28 +26,34 @@ class VentanaPrincipal(ctk.CTk):
         self.crear_widgets()
 
     def crear_widgets(self):
+        #Título
         self.label_titulo = ctk.CTkLabel(self, text="📚 MiBiblio 📚", font=("Arial", 24))
         self.label_titulo.grid(row=0, column=0, padx=20, pady=20, sticky="w")
 
+        #Buscador
         self.entry_busqueda = ctk.CTkEntry(self, placeholder_text="Buscar libros...")
         self.entry_busqueda.grid(row=0, column=1, padx=10, pady=20, sticky="ew")
 
+        #Botón lupa
         icono_lupa = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/lupa.png"), size=(30, 30))
         self.boton_buscar = ctk.CTkButton(self, image=icono_lupa, text="", width=50, height=50, corner_radius=15, command=self.accion_buscar)
         self.boton_buscar.grid(row=0, column=2, padx=10, pady=20)
 
+        #Frame libros
+        self.frame_libros = ctk.CTkScrollableFrame(self)
+        self.frame_libros.grid(row=1, column=0, columnspan=3, padx=20, pady=(0, 10), sticky="nsew")
+        self.grid_rowconfigure(1, weight=1)
+
+        #Botón añadir
         icono_mas = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/plus.png"), size=(20, 20))
         self.boton_anhadir = ctk.CTkButton(
             self, 
             image=icono_mas, text="", 
             command=self.accion_anhadir, 
             width=50, height=50,
-            corner_radius=15)
-        self.boton_anhadir.grid(row=1, column=2, sticky="se", padx=10, pady=10)
-
-        self.frame_libros = ctk.CTkScrollableFrame(self)
-        self.frame_libros.grid(row=2, column=0, columnspan=3, padx=20, pady=10, sticky="nsew")
-        self.grid_rowconfigure(2, weight=1)
+            corner_radius=15,
+            bg_color="#DBDBDB")
+        self.boton_anhadir.place(relx=1.0, rely=1.0, x=-40, y=-20, anchor="se")
 
         self.mostrar_libros_guardados()
 
@@ -71,21 +77,35 @@ class VentanaPrincipal(ctk.CTk):
                     with urllib.request.urlopen(url) as u:
                         raw_data = u.read()
                     im = Image.open(BytesIO(raw_data))
-                    im = im.resize((60, 90))
+                    im = im.resize((160, 190))
                     imagen_portada = ctk.CTkImage(light_image=im)
                 except Exception as e:
                     print("Error cargando portada:", e)
 
-            boton = ctk.CTkButton(
-                self.frame_libros,
-                text=texto,
-                image=imagen_portada,
-                anchor="w",
-                compound="right",
-                height=100,
-                command=lambda l=libro: self.acciion_editar_libro(l)
-            )
-            boton.pack(fill="x", padx=10, pady=5)
+            item_frame = ctk.CTkFrame(self.frame_libros, fg_color="#3B8ED0", height=200)
+            item_frame.pack(fill="x", padx=10, pady=5)
+            item_frame.grid_propagate(False)  # Para que respete el height definido
+
+            # Configurar la estructura de grid
+            item_frame.grid_columnconfigure(0, weight=1)  # Para que el texto se expanda
+            item_frame.grid_rowconfigure(0, weight=1)
+
+            # Texto a la izquierda, centrado verticalmente
+            texto_label = ctk.CTkLabel(item_frame, text=texto, anchor="w", justify="left")
+            texto_label.grid(row=0, column=0, sticky="nsw", padx=(10, 0))
+
+            # Imagen a la derecha, centrada verticalmente
+            if imagen_portada:
+                imagen_label = ctk.CTkLabel(item_frame, image=imagen_portada, text="")
+                imagen_label.grid(row=0, column=1, sticky="nse", padx=10)
+
+            # Vincular el frame y sus elementos al evento de clic
+            item_frame.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
+            texto_label.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
+            if imagen_portada:
+                imagen_label.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
+
+
 
     def accion_anhadir(self):
         VentanaAnhadirLibro(self)
