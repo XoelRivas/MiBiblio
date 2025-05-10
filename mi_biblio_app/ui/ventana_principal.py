@@ -41,7 +41,7 @@ class VentanaPrincipal(ctk.CTk):
 
         #Frame libros
         self.frame_libros = ctk.CTkScrollableFrame(self)
-        self.frame_libros.grid(row=1, column=0, columnspan=3, padx=20, pady=(0, 10), sticky="nsew")
+        self.frame_libros.grid(row=1, column=0, columnspan=2, padx=20, pady=(0, 10), sticky="nsew")
         self.grid_rowconfigure(1, weight=1)
 
         #Botón añadir
@@ -51,13 +51,15 @@ class VentanaPrincipal(ctk.CTk):
             image=icono_mas, text="", 
             command=self.accion_anhadir, 
             width=50, height=50,
-            corner_radius=15,
-            bg_color="#DBDBDB")
-        self.boton_anhadir.place(relx=1.0, rely=1.0, x=-40, y=-20, anchor="se")
+            corner_radius=15)
+        self.boton_anhadir.place(relx=1.0, rely=1.0, x=-20, y=-20, anchor="se")
 
         self.mostrar_libros_guardados()
 
     def mostrar_libros_guardados(self):
+        color_normal = "#3B8ED0"
+        color_hover = "#36719F"
+
         for widget in self.frame_libros.winfo_children():
             widget.destroy()
 
@@ -77,29 +79,40 @@ class VentanaPrincipal(ctk.CTk):
                     with urllib.request.urlopen(url) as u:
                         raw_data = u.read()
                     im = Image.open(BytesIO(raw_data))
-                    im = im.resize((160, 190))
-                    imagen_portada = ctk.CTkImage(light_image=im)
+                    im = im.resize((100, 150))
+                    imagen_portada = ctk.CTkImage(light_image=im, size=(100, 150))
                 except Exception as e:
                     print("Error cargando portada:", e)
 
-            item_frame = ctk.CTkFrame(self.frame_libros, fg_color="#3B8ED0", height=200)
+            
+            item_frame = ctk.CTkFrame(self.frame_libros, fg_color=color_normal, height=170)
             item_frame.pack(fill="x", padx=10, pady=5)
-            item_frame.grid_propagate(False)  # Para que respete el height definido
+            item_frame.grid_propagate(False)
 
-            # Configurar la estructura de grid
-            item_frame.grid_columnconfigure(0, weight=1)  # Para que el texto se expanda
+            def on_enter(e, frame=item_frame):
+                frame.configure(fg_color=color_hover)
+                frame.configure(cursor="hand2")
+
+            def on_leave(e, frame=item_frame):
+                frame.configure(fg_color=color_normal)
+                frame.configure(cursor="")
+
+            item_frame.grid_columnconfigure(0, weight=1)
             item_frame.grid_rowconfigure(0, weight=1)
+            item_frame.bind("<Enter>", on_enter)
+            item_frame.bind("<Leave>", on_leave)
 
-            # Texto a la izquierda, centrado verticalmente
             texto_label = ctk.CTkLabel(item_frame, text=texto, anchor="w", justify="left")
             texto_label.grid(row=0, column=0, sticky="nsw", padx=(10, 0))
+            texto_label.bind("<Enter>", on_enter)
+            texto_label.bind("<Leave>", on_leave)
 
-            # Imagen a la derecha, centrada verticalmente
             if imagen_portada:
                 imagen_label = ctk.CTkLabel(item_frame, image=imagen_portada, text="")
                 imagen_label.grid(row=0, column=1, sticky="nse", padx=10)
+                imagen_label.bind("<Enter>", on_enter)
+                imagen_label.bind("<Leave>", on_leave)
 
-            # Vincular el frame y sus elementos al evento de clic
             item_frame.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
             texto_label.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
             if imagen_portada:
@@ -108,7 +121,10 @@ class VentanaPrincipal(ctk.CTk):
 
 
     def accion_anhadir(self):
-        VentanaAnhadirLibro(self)
+        ventana = VentanaAnhadirLibro(self)
+        ventana.lift()
+        ventana.focus_force()
+        ventana.grab_set()
 
     def accion_buscar(self):
         print(f"Buscando: {self.entry_busqueda.get()}")
