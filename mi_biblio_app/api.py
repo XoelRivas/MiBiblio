@@ -1,4 +1,5 @@
 import requests
+import re
 
 def extraer_isbn(doc):
     if "isbn" in doc and isinstance(doc["isbn"], list):
@@ -11,12 +12,16 @@ def extraer_isbn(doc):
 
     return None
 
-def buscar_libros_por_titulo(titulo, max_resultados=10):
+def buscar_libros_por_titulo_autor_isbn(query, max_resultados=20):
     url = "https://openlibrary.org/search.json"
-    params = {
-        "title": titulo,
-        "limit": max_resultados
-    }
+
+    query_limpia = query.replace("-", "").strip()
+    es_isbn = re.fullmatch(r"\d{10}|\d{13}", query_limpia)
+
+    if es_isbn:
+        params = {"isbn": query_limpia}
+    else:
+        params = {"q": query, "limit": max_resultados}
 
     try:
         respuesta = requests.get(url, params=params)

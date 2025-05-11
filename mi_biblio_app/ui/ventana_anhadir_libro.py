@@ -1,15 +1,16 @@
 import customtkinter as ctk
 from PIL import Image
-from api import buscar_libros_por_titulo
-from database import insertar_editorial, insertar_autor, insertar_libro, relacionar_libro_autor
+from api import buscar_libros_por_titulo_autor_isbn
+from database import insertar_autor, insertar_libro, relacionar_libro_autor
 from io import BytesIO
 import urllib.request
 import threading
 import time
 
 class VentanaAnhadirLibro(ctk.CTkToplevel):
-    def __init__(self, master):
+    def __init__(self, master, callback=None):
         super().__init__(master)
+        self.callback = callback
 
         self.title("Añadir Libro")
         self.geometry("700x500")
@@ -44,17 +45,14 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
 
         self.label_cargando = ctk.CTkLabel(self.frame_resultados, text="Buscando.")
         self.label_cargando.pack(pady=10)
-        self.animacion_cargando_etapa = 0
-        self.animacion_activa = True
-        self.animar_texto_cargando()
-
+        
+        self.buscando = True
+        threading.Thread(target=self.animar_texto_cargando, daemon=True).start()
         threading.Thread(target=self.ejecutar_busqueda, args=(titulo,), daemon=True).start()
 
     def ejecutar_busqueda(self, titulo):
-        time.sleep(3)
-        resultados = buscar_libros_por_titulo(titulo)
-
-        self.after_cancel(self.animacion_id)
+        resultados = buscar_libros_por_titulo_autor_isbn(titulo)
+        self.buscando = False
         self.after(0, self.mostrar_resultados, resultados)
 
     def mostrar_resultados(self, resultados):
@@ -70,42 +68,28 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
 
     def animar_texto_cargando(self):
         puntos = ["Buscando.", "Buscando..", "Buscando..."]
-        self.label_cargando.configure(text=puntos[self.animacion_cargando_etapa % 3])
-        self.animacion_cargando_etapa += 1
-        self.animacion_id = self.after(500, self.animar_texto_cargando)
+        etapa = 0
+        while self.buscando:
+            texto = puntos[etapa % 3]
+            self.after(0, lambda t=texto: self.label_cargando.configure(text=t))
+            etapa += 1
+            time.sleep(0.5)
 
     def mostrar_resultado(self, libro):
         color_normal = "#3B8ED0"
         color_hover = "#36719F"
-
         texto = f"{libro['titulo']} - {libro['autor']} ({libro['anho']})"
-
-        imagen_portada = None
-        if libro.get("cover_id"):
-            try:
-                url = f"https://covers.openlibrary.org/b/id/{libro['cover_id']}-M.jpg"
-                with urllib.request.urlopen(url) as u:
-                    raw_data = u.read()
-                im = Image.open(BytesIO(raw_data))
-                im = im.resize((100, 150))
-                imagen_portada = ctk.CTkImage(light_image=im, size=(100, 150))
-            except Exception as e:
-                print("Error cargando portada:", e)
 
         item_frame = ctk.CTkFrame(self.frame_resultados, fg_color=color_normal, height=170)
         item_frame.pack(fill="x", padx=10, pady=5)
         item_frame.grid_propagate(False)
 
-        def on_enter(e, frame=item_frame):
-            frame.configure(fg_color=color_hover)
-            frame.configure(cursor="hand2")
-
-        def on_leave(e, frame=item_frame):
-            frame.configure(fg_color=color_normal)
-            frame.configure(cursor="")
-
         item_frame.grid_columnconfigure(0, weight=1)
         item_frame.grid_rowconfigure(0, weight=1)
+
+        def on_enter(e): item_frame.configure(fg_color=color_hover, cursor="hand2")
+        def on_leave(e): item_frame.configure(fg_color=color_normal, cursor="")
+
         item_frame.bind("<Enter>", on_enter)
         item_frame.bind("<Leave>", on_leave)
 
@@ -114,16 +98,27 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
         texto_label.bind("<Enter>", on_enter)
         texto_label.bind("<Leave>", on_leave)
 
-        if imagen_portada:
-            imagen_label = ctk.CTkLabel(item_frame, image=imagen_portada, text="")
-            imagen_label.grid(row=0, column=1, sticky="nse", padx=10)
-            imagen_label.bind("<Enter>", on_enter)
-            imagen_label.bind("<Leave>", on_leave)
+        imagen_label = ctk.CTkLabel(item_frame, text="")
+        imagen_label.grid(row=0, column=1, sticky="nse", padx=10)
+        imagen_label.bind("<Enter>", on_enter)
+        imagen_label.bind("<Leave>", on_leave)
 
         item_frame.bind("<Button-1>", lambda e, l=libro: self.seleccionar_libro(l))
         texto_label.bind("<Button-1>", lambda e, l=libro: self.seleccionar_libro(l))
-        if imagen_portada:
-            imagen_label.bind("<Button-1>", lambda e, l=libro: self.seleccionar_libro(l))
+        imagen_label.bind("<Button-1>", lambda e, l=libro: self.seleccionar_libro(l))
+
+        if libro.get("cover_id"):
+            def cargar_portada():
+                try:
+                    url = f"https://covers.openlibrary.org/b/id/{libro['cover_id']}-M.jpg"
+                    with urllib.request.urlopen(url) as u:
+                        raw_data = u.read()
+                    im = Image.open(BytesIO(raw_data)).resize((100, 150))
+                    portada = ctk.CTkImage(light_image=im, size=(100, 150))
+                    self.after(0, lambda: imagen_label.configure(image=portada))
+                except Exception as e:
+                    print("Error cargando portada:", e)
+            threading.Thread(target=cargar_portada, daemon=True).start()
 
     def seleccionar_libro(self, libro):
         id_editorial = None
@@ -135,4 +130,7 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
                 relacionar_libro_autor(id_libro, id_autor)
 
         ctk.CTkLabel(self.frame_resultados, text="✅ Libro guardado correctamente.").pack(pady=10)
+
+        if self.callback:
+            self.callback()
     

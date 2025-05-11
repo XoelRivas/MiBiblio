@@ -121,7 +121,7 @@ class VentanaPrincipal(ctk.CTk):
 
 
     def accion_anhadir(self):
-        ventana = VentanaAnhadirLibro(self)
+        ventana = VentanaAnhadirLibro(self, callback=self.mostrar_libros_guardados)
         ventana.lift()
         ventana.focus_force()
         ventana.grab_set()
