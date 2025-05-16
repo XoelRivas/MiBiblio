@@ -91,6 +91,67 @@ def crear_tablas():
     conn.commit()
     conn.close()
 
+def actualizar_libro(libro, id_libro):
+    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    cursor = conn.cursor()
+
+    id_editorial = insertar_editorial(libro.get("editorial")) if libro.get("editorial") else None
+
+    cursor.execute("""
+        UPDATE libros SET
+            titulo = ?,
+            id_editorial = ?,
+            fecha_publicacion = ?,
+            fecha_edicion = ?,
+            paginas = ?,
+            isbn = ?,
+            serie = ?,
+            volumen = ?,
+            fecha_comenzado = ?,
+            fecha_terminado = ?,
+            estado = ?,
+            resumen = ?,
+            resena_personal = ?,
+            calificacion = ?,
+            tipo = ?,
+            adquision = ?,
+            cover_id = ?
+        WHERE id = ?
+    """, (
+        libro.get("titulo"),
+        id_editorial,
+        libro.get("fecha_publicacion"),
+        libro.get("fecha_edicion"),
+        libro.get("paginas"),
+        libro.get("isbn"),
+        libro.get("serie"),
+        libro.get("volumen"),
+        libro.get("fecha_comenzado"),
+        libro.get("fecha_terminado"),
+        libro.get("estado"),
+        libro.get("resumen"),
+        libro.get("resena_personal"),
+        libro.get("calificacion"),
+        libro.get("tipo"),
+        libro.get("adquision"),
+        libro.get("cover_id"),
+        id_libro
+    ))
+
+    conn.commit()
+    conn.close()
+
+def eliminar_libro(id_libro):
+    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    cursor = conn.cursor()
+
+    cursor.execute("DELETE FROM libros_autores WHERE id_libro = ?", (id_libro,))
+    cursor.execute("DELETE FROM libros_generos WHERE id_libro = ?", (id_libro,))
+    cursor.execute("DELETE FROM libros WHERE id = ?", (id_libro,))
+
+    conn.commit()
+    conn.close()
+
 def insertar_editorial(nombre):
     conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
     cursor = conn.cursor()
