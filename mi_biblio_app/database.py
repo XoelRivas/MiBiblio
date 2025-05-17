@@ -238,12 +238,17 @@ def obtener_libros_guardados():
     cursor = conn.cursor()
 
     cursor.execute("""
-        SELECT l.titulo, l.fecha_publicacion, l.isbn,
-           GROUP_CONCAT(a.nombre || ' ' || a.apellido, ', ') AS autor,
-           l.cover_id
+        SELECT l.id, l.titulo, l.fecha_publicacion, l.isbn,
+               l.fecha_edicion, l.paginas, l.serie, l.volumen,
+               l.fecha_comenzado, l.fecha_terminado, l.estado,
+               l.resumen, l.resena_personal, l.calificacion,
+               l.tipo, l.adquisicion, l.cover_id,
+               e.nombre AS editorial,
+               GROUP_CONCAT(a.nombre || ' ' || a.apellido, ', ') AS autor
         FROM libros l
         LEFT JOIN libros_autores la ON l.id = la.id_libro
         LEFT JOIN autores a ON la.id_autor = a.id
+        LEFT JOIN editoriales e ON l.id_editorial = e.id
         GROUP BY l.id
         ORDER BY l.titulo ASC
     """)

@@ -4,6 +4,7 @@ from PIL import Image
 import urllib.request
 from io import BytesIO
 from database import actualizar_libro, eliminar_libro
+import threading
 
 class VentanaEditarLibro(ctk.CTkToplevel):
     def __init__(self, master, libro, callback=None):
@@ -12,86 +13,84 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         self.libro = libro
         self.callback = callback
         self.title("Editar Libro")
-        self.geometry("600x700")
+        self.geometry("800x800")
         self.resizable(False, False)
-
-        self.grid_columnconfigure(1, weight=1)
+        self.campos = {}
 
         self.crear_widgets()
+        self.mostrar_datos()
 
     def crear_widgets(self):
-        fila = 0
+        frame = ctk.CTkScrollableFrame(self)
+        frame.pack(fill="both", expand=True, padx=20, pady=20)
 
-        if self.libro.get("cover_id"):
-            try:
-                url = f"https://covers.openlibrary.org/b/id/{self.libro['cover_id']}-L.jpg"
-                with urllib.request.urlopen(url) as u:
-                    raw_data = u.read()
-                im = Image.open(BytesIO(raw_data)).resize((150, 220))
-                imagen = ctk.CTkImage(light_image=im, size=(150, 220))
-                portada = ctk.CTkLabel(self, image=imagen, text="")
-                portada.grid(row=fila, column=0, columnspan=2, pady=10)
-            except:
-                pass
-
-        fila += 1
-        self.entries = {}
-
-        campos = [
-            ("titulo", "Título"),
-            ("fecha_publicacion", "Fecha publicación"),
-            ("fecha_edicion", "Fecha edición"),
-            ("paginas", "Páginas"),
-            ("isbn", "ISBN"),
-            ("serie", "Serie"),
-            ("volumen", "Volumen"),
-            ("fecha_comenzado", "Fecha comenzado"),
-            ("fecha_terminado", "Fecha terminado"),
-            ("estado", "Estado"),
-            ("calificacion", "Calificación"),
-            ("tipo", "Tipo"),
-            ("adquisicion", "Adquisición"),
-            ("editorial", "Editorial")
+        campos_a_mostrar = [
+            "titulo", "fecha_publicacion", "fecha_edicion", "paginas", "isbn", "serie", "volumen",
+            "fecha_comenzado", "fecha_terminado", "estado", "resumen", "resena_personal", "calificacion",
+            "tipo", "adquisicion", "editorial"
         ]
 
-        self.textos_largos = {}
-        for clave, etiqueta in [("resumen", "Resumen"), ("resena_personal", "Reseña personal")]:
-            lbl = ctk.CTkLabel(self, text=etiqueta + ":")
-            lbl.grid(row=fila, column=0, padx=10, pady=5, sticky="ne")
-            texto = ctk.CTkTextbox(self, height=80)
-            texto.insert("1.0", self.libro.get(clave, ""))
-            texto.grid(row=fila, column=1, padx=10, pady=5, sticky="ew")
-            self.textos_largos[clave] = texto
-            fila += 1
+        for i, campo in enumerate(campos_a_mostrar):
+            label = ctk.CTkLabel(frame, text=campo.replace("_", " ").capitalize())
+            label.grid(row=i, column=0, sticky="w", pady=5)
 
-        frame_botones = ctk.CTkFrame(self, fg_color="transparent")
-        frame_botones.grid(row=fila, column=0, columnspan=2, pady=20)
+            entry = ctk.CTkEntry(frame, width=400)
+            entry.grid(row=i, column=1, pady=5, padx=10, sticky="ew")
+            self.campos[campo] = entry
 
-        btn_guardar = ctk.CTkButton(frame_botones, text="Guardar cambios", command=self.guardar_cambios)
+        self.portada_label = ctk.CTkLabel(frame, text="Cargando portada...")
+        self.portada_label.grid(row=0, column=2, rowspan=6, padx=20)
+
+        btn_guardar = ctk.CTkButton(self, text="Guardar cambios", command=self.guardar_cambios)
         btn_guardar.pack(side="left", padx=10)
 
-        btn_eliminar = ctk.CTkButton(frame_botones, text="Eliminar libro", fg_color="red", hover_color="#8B0000", command=self.eliminar_libro)
+        btn_eliminar = ctk.CTkButton(self, text="Eliminar libro", fg_color="red", hover_color="#8B0000", command=self.eliminar_libro)
         btn_eliminar.pack(side="left", padx=10)
 
-        btn_cancelar = ctk.CTkButton(frame_botones, text="Cancelar", command=self.destroy)
+        btn_cancelar = ctk.CTkButton(self, text="Cancelar", command=self.destroy)
         btn_cancelar.pack(side="left", padx=10)
 
+    def mostrar_datos(self):
+        for campo, entry in self.campos.items():
+            valor = self.libro.get(campo) or ""
+            entry.insert(0, str(valor))
+
+            if self.libro.get("cover_id"):
+                url = f"https://covers.openlibrary.org/b/id/{self.libro['cover_id']}-L.jpg"
+                threading.Thread(target=self.cargar_portada, args=(url,), daemon=True).start()
+            else:
+                self.portada_label.configure(text="Sin portada")
+
+    def cargar_portada(self, url):
+        try:
+            with urllib.request.urlopen(url) as u:
+                raw_data = u.read()
+            im = Image.open(BytesIO(raw_data)).resize((120, 180))
+            portada = ctk.CTkImage(light_image=im, size=(120, 180))
+            self.after(0, lambda: self.portada_label.configure(image=portada, text=""))
+        except Exception as e:
+            print("Error cargando portada:", e)
+            self.after(0, lambda: self.portada_label.configure(text="Error al cargar portada"))
+
     def guardar_cambios(self):
-        for clave, entry in self.entries.items():
-            self.libro[clave] = entry.get().strip()
+        datos_actualizados = {campo: campo_widget.get() for campo, campo_widget in self.campos.items()}
+        datos_actualizados["cover_id"] = self.libro.get("cover_id")
 
-        for clave, texto in self.textos_largos.items():
-            self.libro[clave] = texto.get("1.0", "end").strip()
-
-        actualizar_libro(self.libro)
-
-        if self.callback:
+        try:
+            actualizar_libro(datos_actualizados, self.libro["id"])
+            messagebox.showinfo("Éxito", "Libro actualizado correctamente.")
             self.destroy()
+            self.callback()
+        except Exception as e:
+            messagebox.showerror("Error", f"No se puedo actualizar el libro.\n{e}")
 
     def eliminar_libro(self):
         confirm = messagebox.askyesno("Eliminar", "¿Estás seguro de que quieres elimnar este libro?")
         if confirm:
-            eliminar_libro(self.libro["id"])
-            if self.callback:
+            try:
+                eliminar_libro(self.libro["id"])
+                messagebox.showinfo("Eliminado", "Libro eliminado correctamente.")
+                self.destroy()
                 self.callback()
-            self.destroy()
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo elimnar el libro.\n{e}")
