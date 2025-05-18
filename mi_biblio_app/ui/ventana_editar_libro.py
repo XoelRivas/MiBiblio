@@ -5,6 +5,7 @@ import urllib.request
 from io import BytesIO
 from database import actualizar_libro, eliminar_libro
 import threading
+from tkcalendar import DateEntry
 
 class VentanaEditarLibro(ctk.CTkToplevel):
     def __init__(self, master, libro, callback=None):
@@ -13,8 +14,8 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         self.libro = libro
         self.callback = callback
         self.title("Editar Libro")
-        self.geometry("800x800")
-        self.resizable(True, True)
+        self.geometry("750x800")
+        self.resizable(False, False)
         self.campos = {}
 
         self.crear_widgets()
@@ -29,16 +30,16 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             ("autor", "Autor", "entry"),
             ("serie", "Serie", "entry"),
             ("volumen", "Volumen", "entry"),
-            ("fecha_publicacion", "Fecha publicación", "entry"),
-            ("fecha_edicion", "Fecha edición", "entry"),
+            ("fecha_publicacion", "Fecha publicación", "calendar"),
+            ("fecha_edicion", "Fecha edición", "calendar"),
             ("editorial", "Editorial", "entry"),
             ("isbn", "ISBN", "entry"),
             ("resumen", "Resumen", "textbox"),
             ("genero", "Género", "entry"),
             ("paginas", "Páginas", "entry"),
             ("estado", "Estado", "optionmenu", ["Pendiente", "Leyendo", "Terminado"]),
-            ("fecha_comenzado", "Fecha comenzado", "entry"),
-            ("fecha_terminado", "Fecha terminado", "entry"),
+            ("fecha_comenzado", "Fecha comenzado", "calendar"),
+            ("fecha_terminado", "Fecha terminado", "calendar"),
             ("tipo", "Tipo", "optionmenu", ["Físico", "Ebook", "Audio"]),
             ("adquisicion", "Adquisición", "optionmenu", ["Comprado", "Biblioteca", "Gratis", "Prestado", "Regalo"]),
             ("resena_personal", "Reseña personal", "textbox"),
@@ -51,6 +52,8 @@ class VentanaEditarLibro(ctk.CTkToplevel):
 
             if tipo_widget == "entry":
                 widget = ctk.CTkEntry(self.frame, width=400)
+            elif tipo_widget == "calendar":
+                widget = DateEntry(self.frame, width=19, background="darkblue", foreground="white", borderwidth=2, date_pattern="yyyy-mm-dd", state="readonly")
             elif tipo_widget == "textbox":
                 widget = ctk.CTkTextbox(self.frame, width=400)
             elif tipo_widget == "optionmenu":
@@ -65,18 +68,29 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         self.portada_label = ctk.CTkLabel(self.frame, text="Cargando portada...")
         self.portada_label.grid(row=0, column=2, rowspan=6, padx=20)
 
-        ctk.CTkButton(self, text="Guardar cambios", command=self.guardar_cambios).pack(side="left", padx=10)
-        ctk.CTkButton(self, text="Eliminar libro", fg_color="red", hover_color="#8B0000", command=self.eliminar_libro).pack(side="left", padx=10)
-        ctk.CTkButton(self, text="Cancelar", command=self.destroy).pack(side="left", padx=10)
+        ctk.CTkButton(self, text="Guardar cambios", command=self.guardar_cambios).pack(side="left", padx=20, pady=(0, 20))
+        ctk.CTkButton(self, text="Eliminar libro", fg_color="red", hover_color="#8B0000", command=self.eliminar_libro).pack(side="left", padx=10, pady=(0, 20))
+        ctk.CTkButton(self, text="Cancelar", command=self.destroy).pack(side="left", padx=10, pady=(0, 20))
 
     def mostrar_datos(self):
         for clave, _, tipo_widget, *resto in self.config_campos:
-            valor = self.libro.get(clave, "")
+            valor = self.libro.get(clave)
             widget = self.campos[clave]
+
+            if valor is None:
+                valor = ""
+
             if tipo_widget == "entry":
-                widget.insert(0, str(valor))
+                if valor != "":
+                    widget.insert(0, str(valor))
+            elif tipo_widget == "calendar":
+                try:
+                    widget.set_date(valor)
+                except Exception:
+                    pass
             elif tipo_widget == "textbox":
-                widget.insert("1.0", str(valor))
+                if valor != "":
+                    widget.insert("1.0", str(valor))
             elif tipo_widget == "optionmenu":
                 if valor in widget.cget("values"):
                     widget.set(valor)
