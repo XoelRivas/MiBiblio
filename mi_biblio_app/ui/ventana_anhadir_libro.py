@@ -14,7 +14,7 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
 
         self.title("Añadir Libro")
         self.geometry("700x500")
-        self.resizable(False, False)
+        self.resizable(True, True)
 
         self.grid_columnconfigure((0, 1, 2), weight=1)
         self.grid_rowconfigure(1, weight=1)

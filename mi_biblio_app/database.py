@@ -70,8 +70,8 @@ def crear_tablas():
         id_libro INTEGER,
         id_autor INTEGER,
         PRIMARY KEY (id_libro, id_autor),
-        FOREIGN KEY (id_libro) REFERENCES libros(id),
-        FOREIGN KEY (id_autor) REFERENCES autores(id)
+        FOREIGN KEY (id_libro) REFERENCES libros(id) ON DELETE CASCADE,
+        FOREIGN KEY (id_autor) REFERENCES autores(id) ON DELETE CASCADE
     );    
 """
     )
@@ -82,8 +82,8 @@ def crear_tablas():
         id_libro INTEGER,
         id_genero INTEGER,
         PRIMARY KEY (id_libro, id_genero),
-        FOREIGN KEY (id_libro) REFERENCES libros(id),
-        FOREIGN KEY (id_genero) REFERENCES generos(id)
+        FOREIGN KEY (id_libro) REFERENCES libros(id) ON DELETE CASCADE,
+        FOREIGN KEY (id_genero) REFERENCES generos(id) ON DELETE CASCADE
     );    
 """
     )
@@ -154,13 +154,44 @@ def actualizar_libro(libro, id_libro):
 def eliminar_libro(id_libro):
     conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
     cursor = conn.cursor()
+    cursor.execute("PRAGMA foreign_keys = ON")
 
-    cursor.execute("DELETE FROM libros_autores WHERE id_libro = ?", (id_libro,))
-    cursor.execute("DELETE FROM libros_generos WHERE id_libro = ?", (id_libro,))
-    cursor.execute("DELETE FROM libros WHERE id = ?", (id_libro,))
+    try:
+        cursor.execute("SELECT id_autor FROM libros_autores WHERE id_libro = ?", (id_libro,))
+        autores = cursor.fetchall()
 
-    conn.commit()
-    conn.close()
+        cursor.execute("SELECT id_genero FROM libros_generos WHERE id_libro = ?", (id_libro,))
+        generos = cursor.fetchall()
+
+        cursor.execute("SELECT id_editorial FROM libros WHERE id = ?", (id_libro,))
+        resultado_editorial = cursor.fetchall()
+        id_editorial = resultado_editorial[0][0] if resultado_editorial else None
+
+        cursor.execute("DELETE FROM libros WHERE id = ?", (id_libro,))
+
+        for (id_autor,) in autores:
+            cursor.execute("SELECT COUNT(*) FROM libros_autores WHERE id_autor = ?", (id_autor,))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute("DELETE FROM autores WHERE id = ?", (id_autor,))
+
+        for (id_genero,) in generos:
+            cursor.execute("SELECT COUNT(*) FROM libros_generos WHERE id_genero = ?", (id_genero,))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute("DELETE FROM generos WHERE id = ?", (id_genero,))
+
+        if id_editorial is not None:
+            cursor.execute("SELECT COUNT(*) FROM libros WHERE id_editorial = ?", (id_editorial,))
+            if cursor.fetchone()[0] == 0:
+                cursor.execute("DELETE FROM editoriales WHERE id = ?", (id_editorial,))
+
+        conn.commit()
+
+    except Exception as e:
+        conn.rollback()
+        raise e
+    
+    finally:
+        conn.close()
 
 def insertar_editorial(nombre, conn=None, cursor=None):
     cerrar = False

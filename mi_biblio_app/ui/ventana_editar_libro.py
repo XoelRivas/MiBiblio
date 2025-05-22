@@ -15,7 +15,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         self.callback = callback
         self.title("Editar Libro")
         self.geometry("750x800")
-        self.resizable(False, False)
+        self.resizable(True, True)
         self.campos = {}
 
         self.crear_widgets()
@@ -37,7 +37,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             ("resumen", "Resumen", "textbox"),
             ("genero", "Género", "entry"),
             ("paginas", "Páginas", "entry"),
-            ("estado", "Estado", "optionmenu", ["Pendiente", "Leyendo", "Terminado"]),
+            ("estado", "Estado", "optionmenu", ["Leyendo", "Pendiente", "Terminado"]),
             ("fecha_comenzado", "Fecha comenzado", "calendar"),
             ("fecha_terminado", "Fecha terminado", "calendar"),
             ("tipo", "Tipo", "optionmenu", ["Físico", "Ebook", "Audio"]),
@@ -138,13 +138,25 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             messagebox.showerror("Error", f"No se puedo actualizar el libro.\n{e}")
 
     def eliminar_libro(self):
-        confirm = messagebox.askyesno("Eliminar", "¿Estás seguro de que quieres elimnar este libro?")
+        confirm = messagebox.askyesno(
+            "Eliminar", 
+            "¿Estás seguro de que quieres eliminar este libro?",
+            parent=self
+            )
         if confirm:
             try:
                 eliminar_libro(self.libro["id"])
-                messagebox.showinfo("Eliminado", "Libro eliminado correctamente.")
+                messagebox.showinfo(
+                    "Eliminado", 
+                    "Libro eliminado correctamente.",
+                    parent=self
+                    )
                 self.destroy()
                 if self.callback:
                     self.callback()
             except Exception as e:
-                messagebox.showerror("Error", f"No se pudo elimnar el libro.\n{e}")
+                messagebox.showerror(
+                    "Error", 
+                    f"No se pudo elimnar el libro.\n{e}",
+                    parent=self
+                    )
