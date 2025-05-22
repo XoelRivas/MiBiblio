@@ -17,9 +17,10 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         self.geometry("750x800")
         self.resizable(True, True)
         self.campos = {}
+        self.entradas_autor = []
+        self.entradas_genero = []
 
         self.crear_widgets()
-        self.mostrar_datos()
 
     def crear_widgets(self):
         self.frame = ctk.CTkScrollableFrame(self)
@@ -27,7 +28,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
 
         self.config_campos = [
             ("titulo", "Título", "entry"),
-            ("autor", "Autor", "entry"),
+            ("autor", "Autor", "multi_entry_autor"),
             ("serie", "Serie", "entry"),
             ("volumen", "Volumen", "entry"),
             ("fecha_publicacion", "Fecha publicación", "calendar"),
@@ -35,7 +36,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             ("editorial", "Editorial", "entry"),
             ("isbn", "ISBN", "entry"),
             ("resumen", "Resumen", "textbox"),
-            ("genero", "Género", "entry"),
+            ("genero", "Género", "multi_entry_genero"),
             ("paginas", "Páginas", "entry"),
             ("estado", "Estado", "optionmenu", ["Leyendo", "Pendiente", "Terminado"]),
             ("fecha_comenzado", "Fecha comenzado", "calendar"),
@@ -46,24 +47,41 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             ("calificacion", "Calificación", "optionmenu", ["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"]),
         ]
 
-        for i, config in enumerate(self.config_campos):
+        fila = 0
+
+        for config in self.config_campos:
             clave, etiqueta, tipo_widget = config[0], config[1], config[2]
-            ctk.CTkLabel(self.frame, text=etiqueta).grid(row=i, column=0, sticky="w", pady=5)
+            ctk.CTkLabel(self.frame, text=etiqueta).grid(row=fila, column=0, sticky="w", pady=5)
 
             if tipo_widget == "entry":
                 widget = ctk.CTkEntry(self.frame, width=400)
+                widget.grid(row=fila, column=1, pady=5, padx=10, sticky="w")
+                self.campos[clave] = widget
             elif tipo_widget == "calendar":
                 widget = DateEntry(self.frame, width=19, background="darkblue", foreground="white", borderwidth=2, date_pattern="yyyy-mm-dd", state="readonly")
+                widget.grid(row=fila, column=1, pady=5, padx=10, sticky="w")
+                self.campos[clave] = widget
             elif tipo_widget == "textbox":
                 widget = ctk.CTkTextbox(self.frame, width=400)
+                widget.grid(row=fila, column=1, pady=5, padx=10, sticky="w")
+                self.campos[clave] = widget
             elif tipo_widget == "optionmenu":
                 opciones = config[3]
                 widget = ctk.CTkOptionMenu(self.frame, values=opciones)
+                widget.grid(row=fila, column=1, pady=5, padx=10, sticky="w")
+                self.campos[clave] = widget
+            elif tipo_widget == "multi_entry_autor":
+                self.entradas_autor = []
+                self.anadir_entrada_autor(fila)
+                ctk.CTkButton(self.frame, text="+", width=30, command=self.anadir_entrada_autor).grid(row=fila, column=2, padx=5)
+            elif tipo_widget == "multi_entry_genero":
+                self.entradas_genero = []
+                self.anadir_entrada_genero(fila)
+                ctk.CTkButton(self.frame, text="+", width=30, command=self.anadir_entrada_genero).grid(row=fila, column=2, padx=5)
             else:
                 continue
 
-            widget.grid(row=i, column=1, pady=5, padx=10, sticky="w")
-            self.campos[clave] = widget
+            fila += 1
 
         self.portada_label = ctk.CTkLabel(self.frame, text="Cargando portada...")
         self.portada_label.grid(row=0, column=2, rowspan=6, padx=20)
@@ -72,8 +90,46 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         ctk.CTkButton(self, text="Eliminar libro", fg_color="red", hover_color="#8B0000", command=self.eliminar_libro).pack(side="left", padx=10, pady=(0, 20))
         ctk.CTkButton(self, text="Cancelar", command=self.destroy).pack(side="left", padx=10, pady=(0, 20))
 
+        self.mostrar_datos()
+
+    def anadir_entrada_autor(self, fila=None):
+        entry = ctk.CTkEntry(self.frame, width=400)
+        row = fila if fila is not None else self.frame.grid_size()[1]
+        entry.grid(row=row, column=1, pady=5, padx=10, sticky="w")
+        self.entradas_autor.append(entry)
+
+    def anadir_entrada_genero(self, fila=None):
+        entry = ctk.CTkEntry(self.frame, width=400)
+        row = fila if fila is not None else self.frame.grid_size()[1]
+        entry.grid(row=row, column=1, pady=5, padx=10, sticky="w")
+        self.entradas_genero.append(entry)
+
     def mostrar_datos(self):
+        autores = self.libro.get("autor", "").split(", ")
+        if not self.entradas_autor:
+            self.anadir_entrada_autor()
+
+        for i, autor in enumerate(autores):
+            if i < len(self.entradas_autor):
+                self.entradas_autor[i].insert(0, autor)
+            else:
+                self.anadir_entrada_autor()
+                self.entradas_autor[-1].insert(0, autor)
+
+        generos = self.libro.get("genero", "").split(", ")
+        if not self.entradas_genero:
+            self.anadir_entrada_genero()
+
+        for i, genero in enumerate(generos):
+            if i < len(self.entradas_genero):
+                self.entradas_genero[i].insert(0, genero)
+            else:
+                self.anadir_entrada_genero()
+                self.entradas_genero[-1].insert(0, genero)
+
         for clave, _, tipo_widget, *resto in self.config_campos:
+            if tipo_widget in ["multi_entry_autor", "multi_entry_genero"]:
+                continue
             valor = self.libro.get(clave)
             widget = self.campos[clave]
 
@@ -81,16 +137,14 @@ class VentanaEditarLibro(ctk.CTkToplevel):
                 valor = ""
 
             if tipo_widget == "entry":
-                if valor != "":
-                    widget.insert(0, str(valor))
+                widget.insert(0, str(valor))
             elif tipo_widget == "calendar":
                 try:
                     widget.set_date(valor)
                 except Exception:
                     pass
             elif tipo_widget == "textbox":
-                if valor != "":
-                    widget.insert("1.0", str(valor))
+                widget.insert("1.0", str(valor))
             elif tipo_widget == "optionmenu":
                 if valor in widget.cget("values"):
                     widget.set(valor)
@@ -126,16 +180,18 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             elif tipo_widget == "optionmenu":
                 datos_actualizados[clave] = widget.get()
 
+        datos_actualizados["autor"] = ", ".join(entry.get().strip() for entry in self.entradas_autor if entry.get().strip())
+        datos_actualizados["genero"] = ", ".join(entry.get().strip() for entry in self.entradas_genero if entry.get().strip())
         datos_actualizados["cover_id"] = self.libro.get("cover_id")
 
         try:
             actualizar_libro(datos_actualizados, self.libro["id"])
-            messagebox.showinfo("Éxito", "Libro actualizado correctamente.")
+            messagebox.showinfo("Éxito", "Libro actualizado correctamente.", parent=self)
             self.destroy()
             if self.callback:
                 self.callback()
         except Exception as e:
-            messagebox.showerror("Error", f"No se puedo actualizar el libro.\n{e}")
+            messagebox.showerror("Error", f"No se puedo actualizar el libro.\n{e}", parent=self)
 
     def eliminar_libro(self):
         confirm = messagebox.askyesno(

@@ -32,9 +32,11 @@ def buscar_libros_por_titulo_autor_isbn(query, max_resultados=20):
         for doc in datos.get("docs", [])[:max_resultados]:
             isbn = extraer_isbn(doc)
             
+            autores = doc.get("author_name", []),
             libro = {
                 "titulo": doc.get("title"),
-                "autor": ", ".join(doc.get("author_name", [])),
+                "autores": autores,
+                "autor": ", ".join([a for a in doc.get("author_name", []) if isinstance(a, str)]),
                 "anho": doc.get("first_publish_year"),
                 "isbn": isbn,
                 "id_openlibrary": doc.get("key"),
