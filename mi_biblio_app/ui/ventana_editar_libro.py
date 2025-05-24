@@ -72,19 +72,30 @@ class VentanaEditarLibro(ctk.CTkToplevel):
                 self.campos[clave] = widget
             elif tipo_widget == "multi_entry_autor":
                 self.entradas_autor = []
-                self.anadir_entrada_autor(fila)
-                ctk.CTkButton(self.frame, text="+", width=30, command=self.anadir_entrada_autor).grid(row=fila, column=2, padx=5)
+                self.frame_autores = ctk.CTkFrame(self.frame, fg_color="#C0C0C0", corner_radius=10, border_width=1, border_color="#444444")
+                self.frame_autores.grid(row=fila, column=1, pady=5, padx=10, sticky="w", columnspan=2)
+
+                self.frame_autores_contenido = ctk.CTkFrame(self.frame_autores, fg_color="transparent")
+                self.frame_autores_contenido.pack(padx=10, pady=10, fill="both", expand=True)
+
+                self.anadir_entrada_autor()
+                ctk.CTkButton(self.frame, text="+", width=30, command=self.anadir_entrada_autor).grid(row=fila, column=2, padx=20)
             elif tipo_widget == "multi_entry_genero":
                 self.entradas_genero = []
-                self.anadir_entrada_genero(fila)
-                ctk.CTkButton(self.frame, text="+", width=30, command=self.anadir_entrada_genero).grid(row=fila, column=2, padx=5)
+                self.frame_generos = ctk.CTkFrame(self.frame, fg_color="#C0C0C0", corner_radius=10, border_width=1, border_color="#444444")
+                self.frame_generos.grid(row=fila, column=1, pady=5, padx=10, sticky="w", columnspan=2)
+
+                self.frame_generos_contenido = ctk.CTkFrame(self.frame_generos, fg_color="transparent")
+                self.frame_generos_contenido.pack(padx=10, pady=10, fill="both", expand=True)
+                self.anadir_entrada_genero()
+                ctk.CTkButton(self.frame, text="+", width=30, command=self.anadir_entrada_genero).grid(row=fila, column=2, padx=20)
             else:
                 continue
 
             fila += 1
 
         self.portada_label = ctk.CTkLabel(self.frame, text="Cargando portada...")
-        self.portada_label.grid(row=0, column=2, rowspan=6, padx=20)
+        self.portada_label.grid(row=0, column=3, rowspan=6, padx=20)
 
         ctk.CTkButton(self, text="Guardar cambios", command=self.guardar_cambios).pack(side="left", padx=20, pady=(0, 20))
         ctk.CTkButton(self, text="Eliminar libro", fg_color="red", hover_color="#8B0000", command=self.eliminar_libro).pack(side="left", padx=10, pady=(0, 20))
@@ -92,16 +103,16 @@ class VentanaEditarLibro(ctk.CTkToplevel):
 
         self.mostrar_datos()
 
-    def anadir_entrada_autor(self, fila=None):
-        entry = ctk.CTkEntry(self.frame, width=400)
-        row = fila if fila is not None else self.frame.grid_size()[1]
-        entry.grid(row=row, column=1, pady=5, padx=10, sticky="w")
+    def anadir_entrada_autor(self):
+        row = len(self.entradas_autor)
+        entry = ctk.CTkEntry(self.frame_autores_contenido, width=400)
+        entry.grid(row=row, column=0, pady=5, sticky="w")
         self.entradas_autor.append(entry)
 
-    def anadir_entrada_genero(self, fila=None):
-        entry = ctk.CTkEntry(self.frame, width=400)
-        row = fila if fila is not None else self.frame.grid_size()[1]
-        entry.grid(row=row, column=1, pady=5, padx=10, sticky="w")
+    def anadir_entrada_genero(self):
+        row = len(self.entradas_genero)
+        entry = ctk.CTkEntry(self.frame_generos_contenido, width=400)
+        entry.grid(row=row, column=0, pady=5, sticky="w")
         self.entradas_genero.append(entry)
 
     def mostrar_datos(self):
