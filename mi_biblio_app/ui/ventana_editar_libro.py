@@ -5,7 +5,65 @@ import urllib.request
 from io import BytesIO
 from database import actualizar_libro, eliminar_libro
 import threading
-from tkcalendar import DateEntry
+from tkcalendar import Calendar
+from datetime import datetime
+import tkinter as tk
+
+class CustomDateEntry(ctk.CTkFrame):
+    def __init__(self, master=None, date_format="YYYY-mm-dd", **kwargs):
+        super().__init__(master)
+        self.date_format = date_format
+        self.selected_date = None
+
+        self.entry = ctk.CTkEntry(self, width=150)
+        self.entry.pack(side="left", fill="x", expand=True)
+        self.entry.configure(state="readonly")
+        self.entry.bind("<Button-1>", self.open_calendar)
+
+        self.top = None
+
+    def open_calendar(self, event=None):
+        if self.top is not None and self.top.winfo_exists():
+            return
+        
+        self.top = tk.Toplevel(self)
+        self.top.transient(self)
+        self.top.grab_set()
+        self.top.title("Seleccionar fecha")
+
+        self.top.protocol("WM_DELETE_WINDOW", self.close_calendar)
+
+        today = datetime.today()
+
+        self.cal = Calendar(self.top, selectmode="day", year=today.year, month=today.month, day=today.day, date_pattern=self.date_format)
+        self.cal.pack(padx=10, pady=10)
+
+        button = tk.Button(self.top, text="Aceptar", command=self.set_selected_date)
+        button.pack(pady=(0, 10))
+
+    def close_calendar(self):
+        if self.top is not None:
+            self.top.destroy()
+            self.top = None
+
+    def set_selected_date(self):
+        self.selected_date = self.cal.get_date()
+        self.entry.configure(state="normal")
+        self.entry.delete(0, "end")
+        self.entry.insert(0, self.selected_date)
+        self.entry.configure(state="readonly")
+        self.close_calendar()
+
+    def get(self):
+        return self.selected_date or ""
+
+    def set_date(self, date):
+        self.selected_date = date
+        self.entry.configure(state="normal")
+        self.entry.delete(0, "end")
+        if date:
+            self.entry.insert(0, date)
+        self.entry.configure(state="readonly")
 
 class VentanaEditarLibro(ctk.CTkToplevel):
     def __init__(self, master, libro, callback=None):
@@ -70,7 +128,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
                 widget.grid(row=fila, column=1, pady=5, padx=10, sticky="w")
                 self.campos[clave] = widget
             elif tipo_widget == "calendar":
-                widget = DateEntry(self.formulario_frame, width=19, background="darkblue", foreground="white", borderwidth=2, date_pattern="yyyy-mm-dd", state="readonly")
+                widget = CustomDateEntry(self.formulario_frame)
                 widget.grid(row=fila, column=1, pady=5, padx=10, sticky="w")
                 self.campos[clave] = widget
             elif tipo_widget == "textbox":
