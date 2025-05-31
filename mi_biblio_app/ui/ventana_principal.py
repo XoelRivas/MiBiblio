@@ -7,8 +7,6 @@ from io import BytesIO
 import threading
 from ui.ventana_editar_libro import VentanaEditarLibro
 
-
-
 class VentanaPrincipal(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -56,6 +54,8 @@ class VentanaPrincipal(ctk.CTk):
             corner_radius=15)
         self.boton_anhadir.place(relx=1.0, rely=1.0, x=-20, y=-20, anchor="se")
 
+        self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/sin_portada.png"), size=(100, 150))
+
         self.mostrar_libros_guardados()
 
     def mostrar_libros_guardados(self):
@@ -96,21 +96,24 @@ class VentanaPrincipal(ctk.CTk):
             texto_label.bind("<Enter>", on_enter)
             texto_label.bind("<Leave>", on_leave)
 
+            imagen_label = ctk.CTkLabel(item_frame, text="")
+            imagen_label.grid(row=0, column=1, sticky="nse", padx=10)
+            imagen_label.bind("<Enter>", on_enter)
+            imagen_label.bind("<Leave>", on_leave)
+
             if libro.get("cover_id"):
                 try:
                     url = f"https://covers.openlibrary.org/b/id/{libro['cover_id']}-M.jpg"
-                    imagen_label = ctk.CTkLabel(item_frame, text="")
-                    imagen_label.grid(row=0, column=1, sticky="nse", padx=10)
-                    imagen_label.bind("<Enter>", on_enter)
-                    imagen_label.bind("<Leave>", on_leave)  
                     self.cargar_portada_async(url, imagen_label)
                 except Exception as e:
                     print("Error cargando portada:", e)
+                    imagen_label.configure(image=self.imagen_sin_portada)
+            else:
+                imagen_label.configure(image=self.imagen_sin_portada)
 
             item_frame.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
             texto_label.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
-            if libro.get("cover_id"):
-                imagen_label.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
+            imagen_label.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
 
     def cargar_portada_async(self, url, label):
         def task():

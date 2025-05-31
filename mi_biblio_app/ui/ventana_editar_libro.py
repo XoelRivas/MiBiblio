@@ -8,6 +8,7 @@ import threading
 from tkcalendar import Calendar
 from datetime import datetime
 import tkinter as tk
+import time
 
 class CustomDateEntry(ctk.CTkFrame):
     def __init__(self, master=None, date_format="YYYY-mm-dd", **kwargs):
@@ -77,6 +78,8 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         self.campos = {}
         self.entradas_autor = []
         self.entradas_genero = []
+        self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/sin_portada.png"), size=(120, 180))
+        
 
         self.crear_widgets()
 
@@ -266,7 +269,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             url = f"https://covers.openlibrary.org/b/id/{self.libro['cover_id']}-L.jpg"
             threading.Thread(target=self.cargar_portada, args=(url,), daemon=True).start()
         else:
-            self.portada_label.configure(text="Sin portada")
+            self.portada_label.configure(image=self.imagen_sin_portada, text="")
 
     def cargar_portada(self, url):
         try:
