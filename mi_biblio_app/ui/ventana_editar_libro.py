@@ -8,7 +8,6 @@ import threading
 from tkcalendar import Calendar
 from datetime import datetime
 import tkinter as tk
-import time
 
 class CustomDateEntry(ctk.CTkFrame):
     def __init__(self, master=None, date_format="YYYY-mm-dd", **kwargs):
@@ -111,7 +110,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             ("resumen", "Resumen", "textbox"),
             ("genero", "Género", "multi_entry_genero"),
             ("paginas", "Páginas", "entry"),
-            ("estado", "Estado", "optionmenu", ["Leyendo", "Pendiente", "Terminado"]),
+            ("estado", "Estado", "optionmenu", ["Leyendo", "Pendiente", "Terminado", "Abandonado"]),
             ("fecha_comenzado", "Fecha comenzado", "calendar"),
             ("fecha_terminado", "Fecha terminado", "calendar"),
             ("tipo", "Tipo", "optionmenu", ["Físico", "Ebook", "Audio"]),
@@ -219,7 +218,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             self.boton_quitar_genero.grid_remove()
 
     def mostrar_datos(self):
-        autores = self.libro.get("autor", "").split(", ")
+        autores = (self.libro.get("autor") or "").split(", ")
         if not self.entradas_autor:
             self.anadir_entrada_autor()
 
@@ -230,7 +229,8 @@ class VentanaEditarLibro(ctk.CTkToplevel):
                 self.anadir_entrada_autor()
                 self.entradas_autor[-1].insert(0, autor)
 
-        generos = self.libro.get("genero", "").split(", ")
+        generos = (self.libro.get("genero") or "").split(", ")
+        print("DEBUG - Generos:", self.libro.get("genero"))
         if not self.entradas_genero:
             self.anadir_entrada_genero()
 
@@ -286,12 +286,16 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         datos_actualizados = {}
 
         for clave, _, tipo_widget, *_ in self.config_campos:
+            if tipo_widget in ["multi_entry_autor", "multi_entry_genero"]:
+                continue
             widget = self.campos[clave]
             if tipo_widget == "entry":
                 datos_actualizados[clave] = widget.get()
             elif tipo_widget == "textbox":
                 datos_actualizados[clave] = widget.get("1.0", "end").strip()
             elif tipo_widget == "optionmenu":
+                datos_actualizados[clave] = widget.get()
+            elif tipo_widget == "calendar":
                 datos_actualizados[clave] = widget.get()
 
         datos_actualizados["autor"] = ", ".join(entry.get().strip() for entry in self.entradas_autor if entry.get().strip())
