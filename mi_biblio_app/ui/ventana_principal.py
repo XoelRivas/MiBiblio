@@ -1,11 +1,12 @@
 import customtkinter as ctk
 from PIL import Image
 from ui.ventana_anhadir_libro import VentanaAnhadirLibro
-from database import obtener_libros_guardados
+from database import obtener_libros_guardados, buscar_libros_por_titulo_o_autor
 import urllib.request
 from io import BytesIO
 import threading
 from ui.ventana_editar_libro import VentanaEditarLibro
+from tkinter import messagebox
 
 class VentanaPrincipal(ctk.CTk):
     def __init__(self):
@@ -23,11 +24,15 @@ class VentanaPrincipal(ctk.CTk):
         self.grid_columnconfigure(2, weight=0) #Lupa
         self.grid_rowconfigure(1, weight=1) #Botón +
 
+        self.fuente = ("Arial", 20)
+
+        self.libros = obtener_libros_guardados()
+
         self.crear_widgets()
 
     def crear_widgets(self):
         #Título
-        self.label_titulo = ctk.CTkLabel(self, text="📚 MiBiblio 📚", font=("Arial", 24))
+        self.label_titulo = ctk.CTkLabel(self, text="📚 MiBiblio 📚", font=("Arial", 28))
         self.label_titulo.grid(row=0, column=0, padx=20, pady=20, sticky="w")
 
         #Buscador
@@ -56,16 +61,15 @@ class VentanaPrincipal(ctk.CTk):
 
         self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/sin_portada.png"), size=(100, 150))
 
-        self.mostrar_libros_guardados()
+        self.mostrar_libros(self.libros)
 
-    def mostrar_libros_guardados(self):
+    def mostrar_libros(self, libros):
         color_normal = "#3B8ED0"
         color_hover = "#36719F"
 
         for widget in self.frame_libros.winfo_children():
             widget.destroy()
 
-        libros = obtener_libros_guardados()
         if not libros:
             label = ctk.CTkLabel(self.frame_libros, text="No hay libros guardados.")
             label.pack(pady=10)
@@ -91,7 +95,7 @@ class VentanaPrincipal(ctk.CTk):
             item_frame.bind("<Enter>", on_enter)
             item_frame.bind("<Leave>", on_leave)
 
-            texto_label = ctk.CTkLabel(item_frame, text=texto, anchor="w", justify="left")
+            texto_label = ctk.CTkLabel(item_frame, text=texto, anchor="w", justify="left", font=self.fuente)
             texto_label.grid(row=0, column=0, sticky="nsw", padx=(10, 0))
             texto_label.bind("<Enter>", on_enter)
             texto_label.bind("<Leave>", on_leave)
@@ -135,10 +139,26 @@ class VentanaPrincipal(ctk.CTk):
         ventana.grab_set()
 
     def accion_buscar(self):
-        print(f"Buscando: {self.entry_busqueda.get()}")
+        texto = self.entry_busqueda.get().strip().lower()
+        if not texto:
+            self.mostrar_libros_guardados()
+            return
+        
+        try:
+            libros = buscar_libros_por_titulo_o_autor(texto)
+            if libros:
+                self.mostrar_libros(libros)
+            else:
+                messagebox.showinfo("Sin resultados", "No se encontraron libros que coincidan.")
+        except Exception as e:
+            messagebox.showerror("Error", f"Ocurrió un error al buscar libros.\n{e}")
 
     def accion_editar_libro(self, libro):
         ventana = VentanaEditarLibro(self, libro, callback=self.mostrar_libros_guardados)
         ventana.lift()
         ventana.focus_force()
         ventana.grab_set()
+
+    def mostrar_libros_guardados(self):
+        self.libros = obtener_libros_guardados()
+        self.mostrar_libros(self.libros)

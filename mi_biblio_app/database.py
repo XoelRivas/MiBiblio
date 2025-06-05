@@ -352,6 +352,40 @@ def obtener_libros_guardados():
     conn.close()
     return libros
 
+def buscar_libros_por_titulo_o_autor(texto):
+    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+
+    query = """
+    SELECT l.id, l.titulo, l.fecha_publicacion, l.isbn,
+               l.fecha_edicion, l.paginas, l.serie, l.volumen,
+               l.fecha_comenzado, l.fecha_terminado, l.estado,
+               l.resumen, l.resena_personal, l.calificacion,
+               l.tipo, l.adquisicion, l.cover_id,
+               e.nombre AS editorial,
+               GROUP_CONCAT(a.nombre || ' ' || a.apellido, ', ') AS autor,
+                GROUP_CONCAT(g.nombre, ', ') AS genero
+        FROM libros l
+        LEFT JOIN libros_autores la ON l.id = la.id_libro
+        LEFT JOIN autores a ON la.id_autor = a.id
+        LEFT JOIN libros_generos lg ON l.id = lg.id_libro
+        LEFT JOIN generos g ON lg.id_genero = g.id
+        LEFT JOIN editoriales e ON l.id_editorial = e.id
+        WHERE LOWER(l.titulo) LIKE ?
+            OR LOWER(a.nombre || ' ' || a.apellido) LIKE ?
+        GROUP BY l.id
+        ORDER BY l.titulo ASC
+    """
+
+    param = f"%{texto.lower()}%"
+    cursor.execute(query, (param, param))
+    
+    resultados = [dict(fila) for fila in cursor.fetchall()]
+
+    conn.close()
+    return resultados
+
 if __name__ == "__main__":
     crear_tablas()
     print("Base de datos creada con éxito.")
