@@ -32,7 +32,7 @@ class VentanaPrincipal(ctk.CTk):
 
     def crear_widgets(self):
         #Título
-        self.label_titulo = ctk.CTkLabel(self, text="📚 MiBiblio 📚", font=("Arial", 28))
+        self.label_titulo = ctk.CTkLabel(self, text="📚 MiBiblio 📚", font=("Arial", 30))
         self.label_titulo.grid(row=0, column=0, padx=20, pady=20, sticky="w")
 
         #Buscador

@@ -385,7 +385,3 @@ def buscar_libros_por_titulo_o_autor(texto):
 
     conn.close()
     return resultados
-
-if __name__ == "__main__":
-    crear_tablas()
-    print("Base de datos creada con éxito.")

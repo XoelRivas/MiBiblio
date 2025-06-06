@@ -6,6 +6,7 @@ from io import BytesIO
 import urllib.request
 import threading
 import time
+from tkinter import messagebox
 
 class VentanaAnhadirLibro(ctk.CTkToplevel):
     def __init__(self, master, callback=None):
@@ -14,7 +15,7 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
 
         self.title("Añadir Libro")
         self.geometry("700x500")
-        self.resizable(True, True)
+        self.resizable(False, False)
 
         self.grid_columnconfigure((0, 1, 2), weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -129,7 +130,7 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
                 id_autor = insertar_autor(autor.strip())
                 relacionar_libro_autor(id_libro, id_autor)
 
-        ctk.CTkLabel(self.frame_resultados, text="✅ Libro guardado correctamente.").pack(pady=10)
+        messagebox.showinfo("Libro añadido", "Libro guardado correctamente.", parent=self)
 
         if self.callback:
             self.callback()

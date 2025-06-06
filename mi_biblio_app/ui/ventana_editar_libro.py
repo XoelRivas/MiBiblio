@@ -110,7 +110,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             ("resumen", "Resumen", "textbox"),
             ("genero", "Género", "multi_entry_genero"),
             ("paginas", "Páginas", "entry"),
-            ("estado", "Estado", "optionmenu", ["Leyendo", "Pendiente", "Terminado", "Abandonado"]),
+            ("estado", "Estado", "optionmenu", ["Leyendo", "Leído", "Pendiente", "Abandonado"]),
             ("fecha_comenzado", "Fecha comenzado", "calendar"),
             ("fecha_terminado", "Fecha terminado", "calendar"),
             ("tipo", "Tipo", "optionmenu", ["Físico", "Ebook", "Audio"]),
@@ -230,7 +230,6 @@ class VentanaEditarLibro(ctk.CTkToplevel):
                 self.entradas_autor[-1].insert(0, autor)
 
         generos = (self.libro.get("genero") or "").split(", ")
-        print("DEBUG - Generos:", self.libro.get("genero"))
         if not self.entradas_genero:
             self.anadir_entrada_genero()
 
