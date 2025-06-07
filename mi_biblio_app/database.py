@@ -249,13 +249,29 @@ def insertar_libro(libro, id_editorial=None, conn=None, cursor=None):
 
     cursor.execute("""
         INSERT OR IGNORE INTO libros (
-            titulo, id_editorial, fecha_publicacion, isbn, cover_id
-        ) VALUES (?, ?, ?, ?, ?)
+            titulo, autor, serie, volumen, fecha_publicacion, fecha_edicion,
+            id_editorial, isbn, resumen, genero, paginas, estado, fecha_comenzado,
+            fecha_terminado, tipo, adquisicion, resena_personal, calificacion, cover_id
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         libro.get("titulo"),
+        libro.get("autor"),
+        libro.get("serie"),
+        libro.get("volumen"),
+        libro.get("fecha_publicacion"),
+        libro.get("fecha_edicion"),
         id_editorial,
-        libro.get("anho"),
         libro.get("isbn"),
+        libro.get("resumen"),
+        libro.get("genero"),
+        libro.get("paginas"),
+        libro.get("estado"),
+        libro.get("fecha_comenzado"),
+        libro.get("fecha_terminado"),
+        libro.get("tipo"),
+        libro.get("adquisicion"),
+        libro.get("resena_personal"),
+        libro.get("calificacion"),
         libro.get("cover_id")
     ))
     conn.commit()

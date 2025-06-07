@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from PIL import Image
 from ui.ventana_anhadir_libro import VentanaAnhadirLibro
+from ui.ventana_elegir_modo import VentanaElegirModo
 from database import obtener_libros_guardados, buscar_libros_por_titulo_o_autor
 import urllib.request
 from io import BytesIO
@@ -133,10 +134,7 @@ class VentanaPrincipal(ctk.CTk):
         threading.Thread(target=task, daemon=True).start()
 
     def accion_anhadir(self):
-        ventana = VentanaAnhadirLibro(self, callback=self.mostrar_libros_guardados)
-        ventana.lift()
-        ventana.focus_force()
-        ventana.grab_set()
+        ventana = VentanaElegirModo(self, callback=self.mostrar_libros_guardados)
 
     def accion_buscar(self):
         texto = self.entry_busqueda.get().strip().lower()

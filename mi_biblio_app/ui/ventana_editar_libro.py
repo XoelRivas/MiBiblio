@@ -3,7 +3,7 @@ from tkinter import messagebox
 from PIL import Image
 import urllib.request
 from io import BytesIO
-from database import actualizar_libro, eliminar_libro
+from database import actualizar_libro, eliminar_libro, insertar_libro
 import threading
 from tkcalendar import Calendar
 from datetime import datetime
@@ -178,7 +178,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
 
             fila += 1
 
-        self.portada_label = ctk.CTkLabel(self.portada_frame, text="Cargando portada...")
+        self.portada_label = ctk.CTkLabel(self.portada_frame, image=self.imagen_sin_portada, text="")
         self.portada_label.grid(row=0, column=0, padx=10, pady=10)
 
         ctk.CTkButton(self, text="Guardar cambios", command=self.guardar_cambios).pack(side="left", padx=20, pady=(0, 20))
@@ -218,6 +218,10 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             self.boton_quitar_genero.grid_remove()
 
     def mostrar_datos(self):
+        if self.libro is None:
+            self.portada_label.configure(image=self.imagen_sin_portada, text="")
+            return
+        
         autores = (self.libro.get("autor") or "").split(", ")
         if not self.entradas_autor:
             self.anadir_entrada_autor()
@@ -299,11 +303,16 @@ class VentanaEditarLibro(ctk.CTkToplevel):
 
         datos_actualizados["autor"] = ", ".join(entry.get().strip() for entry in self.entradas_autor if entry.get().strip())
         datos_actualizados["genero"] = ", ".join(entry.get().strip() for entry in self.entradas_genero if entry.get().strip())
-        datos_actualizados["cover_id"] = self.libro.get("cover_id")
+        datos_actualizados["cover_id"] = self.libro.get("cover_id") if self.libro else None
 
         try:
-            actualizar_libro(datos_actualizados, self.libro["id"])
-            messagebox.showinfo("Éxito", "Libro actualizado correctamente.", parent=self)
+            if self.libro:
+                actualizar_libro(datos_actualizados, self.libro["id"])
+                messagebox.showinfo("Éxito", "Libro actualizado correctamente.", parent=self)
+            else:
+                insertar_libro(datos_actualizados)
+                messagebox.showinfo("Éxito", "Libro creado correctamente.", parent=self)
+
             self.destroy()
             if self.callback:
                 self.callback()
