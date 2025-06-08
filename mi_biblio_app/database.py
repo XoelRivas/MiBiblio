@@ -90,11 +90,12 @@ def crear_tablas():
     conn.commit()
     conn.close()
 
-def actualizar_libro(libro, id_libro):
-    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
-    cursor = conn.cursor()
-
-    id_editorial = insertar_editorial(libro.get("editorial"), conn, cursor) if libro.get("editorial") else None
+def actualizar_libro(libro, id_libro, id_editorial=None, ids_autores=None, ids_generos=None, conn=None, cursor=None):
+    cerrar = False
+    if conn is None or cursor is None:
+        conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+        cursor = conn.cursor()
+        cerrar = True
 
     cursor.execute("""
         UPDATE libros SET
@@ -138,17 +139,18 @@ def actualizar_libro(libro, id_libro):
     ))
 
     cursor.execute("DELETE FROM libros_autores WHERE id_libro = ?", (id_libro,))
-    if libro.get("autor"):
-        id_autor = insertar_autor(libro["autor"], conn, cursor)
-        cursor.execute("INSERT OR IGNORE INTO libros_autores (id_libro, id_autor) VALUES (?, ?)", (id_libro, id_autor))
+    if ids_autores:
+        for id_autor in ids_autores:
+            cursor.execute("INSERT OR IGNORE INTO libros_autores (id_libro, id_autor) VALUES (?, ?)", (id_libro, id_autor))
 
     cursor.execute("DELETE FROM libros_generos WHERE id_libro = ?", (id_libro,))
-    if libro.get("genero"):
-        id_genero = insertar_genero(libro["genero"], conn, cursor)
-        cursor.execute("INSERT OR IGNORE INTO libros_generos (id_libro, id_genero) VALUES (?, ?)", (id_libro, id_genero))
+    if ids_generos:
+        for id_genero in ids_generos:
+            cursor.execute("INSERT OR IGNORE INTO libros_generos (id_libro, id_genero) VALUES (?, ?)", (id_libro, id_genero))
 
     conn.commit()
-    conn.close()
+    if cerrar:
+        conn.close()
 
 def eliminar_libro(id_libro):
     conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
@@ -234,7 +236,8 @@ def insertar_autor(nombre_completo, conn=None, cursor=None):
         "SELECT id FROM autores WHERE nombre = ? AND apellido = ?",
         (nombre, apellido)
     )
-    id_autor = cursor.fetchone()[0]
+    resultado = cursor.fetchone()
+    id_autor = resultado[0] if resultado else None
 
     if cerrar:
         conn.close()
@@ -249,13 +252,12 @@ def insertar_libro(libro, id_editorial=None, conn=None, cursor=None):
 
     cursor.execute("""
         INSERT OR IGNORE INTO libros (
-            titulo, autor, serie, volumen, fecha_publicacion, fecha_edicion,
-            id_editorial, isbn, resumen, genero, paginas, estado, fecha_comenzado,
+            titulo, serie, volumen, fecha_publicacion, fecha_edicion,
+            id_editorial, isbn, resumen, paginas, estado, fecha_comenzado,
             fecha_terminado, tipo, adquisicion, resena_personal, calificacion, cover_id
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         libro.get("titulo"),
-        libro.get("autor"),
         libro.get("serie"),
         libro.get("volumen"),
         libro.get("fecha_publicacion"),
@@ -263,7 +265,6 @@ def insertar_libro(libro, id_editorial=None, conn=None, cursor=None):
         id_editorial,
         libro.get("isbn"),
         libro.get("resumen"),
-        libro.get("genero"),
         libro.get("paginas"),
         libro.get("estado"),
         libro.get("fecha_comenzado"),
@@ -309,7 +310,8 @@ def insertar_genero(nombre_genero, conn=None, cursor=None):
         (nombre_genero.strip(),)
     )
 
-    id_genero = cursor.fetchone()[0]
+    resultado = cursor.fetchone()
+    id_genero = resultado[0] if resultado else None
 
     if cerrar:
         conn.close()

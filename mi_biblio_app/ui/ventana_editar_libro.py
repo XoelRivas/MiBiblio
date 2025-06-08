@@ -3,11 +3,12 @@ from tkinter import messagebox
 from PIL import Image
 import urllib.request
 from io import BytesIO
-from database import actualizar_libro, eliminar_libro, insertar_libro
+from database import actualizar_libro, eliminar_libro, insertar_libro, insertar_editorial, insertar_autor, insertar_genero
 import threading
 from tkcalendar import Calendar
 from datetime import datetime
 import tkinter as tk
+import sqlite3
 
 class CustomDateEntry(ctk.CTkFrame):
     def __init__(self, master=None, date_format="YYYY-mm-dd", **kwargs):
@@ -301,23 +302,41 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             elif tipo_widget == "calendar":
                 datos_actualizados[clave] = widget.get()
 
-        datos_actualizados["autor"] = ", ".join(entry.get().strip() for entry in self.entradas_autor if entry.get().strip())
-        datos_actualizados["genero"] = ", ".join(entry.get().strip() for entry in self.entradas_genero if entry.get().strip())
+        autores = [entry.get().strip() for entry in self.entradas_autor if entry.get().strip()]
+        generos = [entry.get().strip() for entry in self.entradas_genero if entry.get().strip()]
         datos_actualizados["cover_id"] = self.libro.get("cover_id") if self.libro else None
 
         try:
+            conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+            cursor = conn.cursor()
+
+            id_editorial = None
+            if "editorial" in datos_actualizados and datos_actualizados["editorial"]:
+                id_editorial = insertar_editorial(datos_actualizados["editorial"], conn=conn, cursor=cursor)
+
+            ids_autores = [insertar_autor(nombre, conn=conn, cursor=cursor) for nombre in autores]
+            ids_generos = [insertar_genero(nombre, conn=conn, cursor=cursor) for nombre in generos]
+
             if self.libro:
-                actualizar_libro(datos_actualizados, self.libro["id"])
+                actualizar_libro(datos_actualizados, self.libro["id"], id_editorial, ids_autores, ids_generos, conn, cursor)
                 messagebox.showinfo("Éxito", "Libro actualizado correctamente.", parent=self)
             else:
-                insertar_libro(datos_actualizados)
+                id_libro = insertar_libro(datos_actualizados, id_editorial, conn=conn, cursor=cursor)
+
+                for id_autor in ids_autores:
+                    cursor.execute("INSERT OR IGNORE INTO libros_autores (id_libro, id_autor) VALUES (?, ?)", (id_libro, id_autor))
+                for id_genero in ids_generos:
+                    cursor.execute("INSERT OR IGNORE INTO libros_generos (id_libro, id_genero) VALUES (?, ?)", (id_libro, id_genero))
+
+                conn.commit()
                 messagebox.showinfo("Éxito", "Libro creado correctamente.", parent=self)
 
+            conn.close()
             self.destroy()
             if self.callback:
                 self.callback()
         except Exception as e:
-            messagebox.showerror("Error", f"No se puedo actualizar el libro.\n{e}", parent=self)
+            messagebox.showerror("Error", f"No se pudo guardar el libro.\n{e}", parent=self)
 
     def eliminar_libro(self):
         confirm = messagebox.askyesno(
