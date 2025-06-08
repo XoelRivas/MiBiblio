@@ -1,5 +1,5 @@
 import customtkinter as ctk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 from PIL import Image
 import urllib.request
 from io import BytesIO
@@ -9,6 +9,7 @@ from tkcalendar import Calendar
 from datetime import datetime
 import tkinter as tk
 import sqlite3
+import os
 
 class CustomDateEntry(ctk.CTkFrame):
     def __init__(self, master=None, date_format="YYYY-mm-dd", **kwargs):
@@ -80,9 +81,9 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         self.entradas_genero = []
         self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/sin_portada.png"), size=(120, 180))
         
-
         self.crear_widgets()
 
+        self.portada_label.bind("<Button-1>", self.seleccionar_portada_personalizada)
     def crear_widgets(self):
         self.frame = ctk.CTkScrollableFrame(self)
         self.frame.pack(fill="both", expand=True, padx=20, pady=20)
@@ -111,7 +112,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             ("resumen", "Resumen", "textbox"),
             ("genero", "Género", "multi_entry_genero"),
             ("paginas", "Páginas", "entry"),
-            ("estado", "Estado", "optionmenu", ["Leyendo", "Leído", "Pendiente", "Abandonado"]),
+            ("estado", "Estado", "optionmenu", ["-", "Leyendo", "Leído", "Pendiente", "Abandonado"]),
             ("fecha_comenzado", "Fecha comenzado", "calendar"),
             ("fecha_terminado", "Fecha terminado", "calendar"),
             ("tipo", "Tipo", "optionmenu", ["Físico", "Ebook", "Audio"]),
@@ -181,12 +182,78 @@ class VentanaEditarLibro(ctk.CTkToplevel):
 
         self.portada_label = ctk.CTkLabel(self.portada_frame, image=self.imagen_sin_portada, text="")
         self.portada_label.grid(row=0, column=0, padx=10, pady=10)
+        self.portada_label.bind("<Enter>", lambda e: self.portada_label.configure(cursor="hand2"))
+        self.portada_label.bind("<Leave>", lambda e: self.portada_label.configure(cursor=""))
 
         ctk.CTkButton(self, text="Guardar cambios", command=self.guardar_cambios).pack(side="left", padx=20, pady=(0, 20))
         ctk.CTkButton(self, text="Eliminar libro", fg_color="red", hover_color="#8B0000", command=self.eliminar_libro).pack(side="left", padx=10, pady=(0, 20))
         ctk.CTkButton(self, text="Cancelar", command=self.destroy).pack(side="left", padx=10, pady=(0, 20))
 
         self.mostrar_datos()
+
+    def dialogo_confirmacion(self, titulo, mensaje):
+        respuesta = {"valor": None}
+
+        def confirmar():
+            respuesta["valor"] = True
+            ventana.destroy()
+
+        def cancelar():
+            respuesta["valor"] = False
+            ventana.destroy()
+
+        ventana = ctk.CTkToplevel(self)
+        ventana.title(titulo)
+        ventana.geometry("300x150")
+        ventana.resizable(False, False)
+        ventana.transient(self)
+        ventana.grab_set()
+
+        label = ctk.CTkLabel(ventana, text=mensaje, wraplength=250)
+        label.pack(pady=20)
+
+        boton_frame = ctk.CTkFrame(ventana, fg_color="transparent")
+        boton_frame.pack(pady=10)
+
+        boton_si = ctk.CTkButton(boton_frame, text="Sí", command=confirmar)
+        boton_si.pack(side="left", padx=10)
+
+        boton_no = ctk.CTkButton(boton_frame, text="No", command=cancelar)
+        boton_no.pack(side="left", padx=10)
+
+        self.wait_window(ventana)
+        return respuesta["valor"]
+
+    def seleccionar_portada_personalizada(self, event=None):
+        respuesta = self.dialogo_confirmacion("Cambiar portada", "¿Desea añadir una portada?")
+        if not respuesta:
+            return
+        
+        ruta_imagen = filedialog.askopenfilename(
+            title="Seleccionar imagen de portada",
+            filetypes=[("Imágenes PNG", "*.png")],
+            parent=self
+        )
+
+        if ruta_imagen:
+            try:
+                carpeta_imagenes = "mi_biblio_app/imagenes"
+                os.makedirs(carpeta_imagenes, exist_ok=True)
+
+                id_libro = self.libro.get("id", "temporal")
+                nombre_archivo = f"portada_{id_libro}.png"
+                destino = os.path.join(carpeta_imagenes, nombre_archivo)
+
+                imagen = Image.open(ruta_imagen)
+                imagen = imagen.resize((120, 180))
+                imagen.save(destino)
+
+                portada_nueva = ctk.CTkImage(light_image=imagen, size=(120, 180))
+                self.portada_label.configure(image=portada_nueva)
+                self.imagen_personalizada = nombre_archivo
+
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo cargar la imagen seleccionada.\n{e}", parent=self)
 
     def anadir_entrada_autor(self):
         row = len(self.entradas_autor)
@@ -270,8 +337,14 @@ class VentanaEditarLibro(ctk.CTkToplevel):
                     widget.set(widget.cget("values")[0])
 
         if self.libro.get("cover_id"):
-            url = f"https://covers.openlibrary.org/b/id/{self.libro['cover_id']}-L.jpg"
-            threading.Thread(target=self.cargar_portada, args=(url,), daemon=True).start()
+            cover_id = self.libro["cover_id"]
+            if cover_id.endswith(".png") and os.path.exists(f"mi_biblio_app/imagenes/{cover_id}"):
+                imagen_local = Image.open(f"mi_biblio_app/imagenes/{cover_id}")
+                portada = ctk.CTkImage(light_image=imagen_local, size=(120, 180))
+                self.portada_label.configure(image=portada, text="")
+            else:
+                url = f"https://covers.openlibrary.org/b/id/{self.libro['cover_id']}-L.jpg"
+                threading.Thread(target=self.cargar_portada, args=(url,), daemon=True).start()
         else:
             self.portada_label.configure(image=self.imagen_sin_portada, text="")
 
@@ -305,6 +378,9 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         autores = [entry.get().strip() for entry in self.entradas_autor if entry.get().strip()]
         generos = [entry.get().strip() for entry in self.entradas_genero if entry.get().strip()]
         datos_actualizados["cover_id"] = self.libro.get("cover_id") if self.libro else None
+
+        if hasattr(self, "imagen_personalizada"):
+            datos_actualizados["cover_id"] = self.imagen_personalizada
 
         try:
             conn = sqlite3.connect("mi_biblio_app/miBiblio.db")

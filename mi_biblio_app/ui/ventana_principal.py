@@ -8,6 +8,7 @@ from io import BytesIO
 import threading
 from ui.ventana_editar_libro import VentanaEditarLibro
 from tkinter import messagebox
+import os
 
 class VentanaPrincipal(ctk.CTk):
     def __init__(self):
@@ -65,9 +66,6 @@ class VentanaPrincipal(ctk.CTk):
         self.mostrar_libros(self.libros)
 
     def mostrar_libros(self, libros):
-        color_normal = "#3B8ED0"
-        color_hover = "#36719F"
-
         for widget in self.frame_libros.winfo_children():
             widget.destroy()
 
@@ -79,18 +77,33 @@ class VentanaPrincipal(ctk.CTk):
         for libro in libros:
             texto = f"{libro['titulo']}\n{libro['autor']} ({libro['fecha_publicacion']})"
 
+            estado = libro.get("estado", "-")
+
+            colores = {
+                "-": ("#3B8ED0", "#36719F"),
+                "Leído": ("#4CAF50", "#388E3C"),
+                "Leyendo": ("#FF9800", "#F57C00"),
+                "Pendiente": ("#9C27B0", "#7B1FA2"),
+                "Abandonado": ("#F44336", "#D32F2F"),
+            }
+
+            color_normal, color_hover = colores.get(estado, ("#3B8ED0", "#36719F"))
+
             item_frame = ctk.CTkFrame(self.frame_libros, fg_color=color_normal, height=170)
             item_frame.pack(fill="x", padx=10, pady=5)
             item_frame.grid_propagate(False)
 
-            def on_enter(e, frame=item_frame):
-                frame.configure(fg_color=color_hover)
-                frame.configure(cursor="hand2")
+            def make_hover_callbacks(frame, normal_color, hover):
+                def on_enter(e, f=frame, hc=hover):
+                    f.configure(fg_color=hc)
+                    f.configure(cursor="hand2")
 
-            def on_leave(e, frame=item_frame):
-                frame.configure(fg_color=color_normal)
-                frame.configure(cursor="")
+                def on_leave(e, f=item_frame, nc=normal_color):
+                    f.configure(fg_color=nc)
+                    f.configure(cursor="")
+                return on_enter, on_leave
 
+            on_enter, on_leave = make_hover_callbacks(item_frame, color_normal, color_hover)
             item_frame.grid_columnconfigure(0, weight=1)
             item_frame.grid_rowconfigure(0, weight=1)
             item_frame.bind("<Enter>", on_enter)
@@ -106,13 +119,23 @@ class VentanaPrincipal(ctk.CTk):
             imagen_label.bind("<Enter>", on_enter)
             imagen_label.bind("<Leave>", on_leave)
 
-            if libro.get("cover_id"):
-                try:
-                    url = f"https://covers.openlibrary.org/b/id/{libro['cover_id']}-M.jpg"
-                    self.cargar_portada_async(url, imagen_label)
-                except Exception as e:
-                    print("Error cargando portada:", e)
-                    imagen_label.configure(image=self.imagen_sin_portada)
+            cover_id = libro.get("cover_id")
+            if cover_id:
+                if cover_id.endswith(".png") and os.path.exists(f"mi_biblio_app/imagenes/{cover_id}"):
+                    try:
+                        imagen_local = Image.open(f"mi_biblio_app/imagenes/{cover_id}").resize((100, 150))
+                        imagen = ctk.CTkImage(light_image=imagen_local, size=(100, 150))
+                        imagen_label.configure(image=imagen)
+                    except Exception as e:
+                        print("Error cargando portada local:", e)
+                        imagen_label.configure(image=self.imagen_sin_portada)
+                else:
+                    try:
+                        url = f"https://covers.openlibrary.org/b/id/{libro['cover_id']}-M.jpg"
+                        self.cargar_portada_async(url, imagen_label)
+                    except Exception as e:
+                        print("Error cargando portada:", e)
+                        imagen_label.configure(image=self.imagen_sin_portada)
             else:
                 imagen_label.configure(image=self.imagen_sin_portada)
 

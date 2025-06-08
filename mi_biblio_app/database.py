@@ -59,7 +59,7 @@ def crear_tablas():
     )
 
     try:
-        cursor.execute("ALTER TABLE libros ADD COLUMN cover_id INTEGER")
+        cursor.execute("ALTER TABLE libros ADD COLUMN cover_id TEXT")
     except sqlite3.OperationalError:
         pass
 
