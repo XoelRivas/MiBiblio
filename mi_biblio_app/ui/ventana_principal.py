@@ -17,9 +17,11 @@ class VentanaPrincipal(ctk.CTk):
         ctk.set_appearance_mode("System")
         ctk.set_default_color_theme("blue")
 
-        self.title("Mi Biblioteca")
+        self.title("MiBiblio")
         self.geometry("900x600")
         self.minsize(800, 500)
+
+        self.iconbitmap("mi_biblio_app/imagenes/icono.ico")
 
         self.grid_columnconfigure(0, weight=0) #Título
         self.grid_columnconfigure(1, weight=1) #Buscador
