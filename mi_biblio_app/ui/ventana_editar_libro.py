@@ -81,6 +81,8 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         self.entradas_genero = []
         self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/sin_portada.png"), size=(120, 180))
         
+        self.iconbitmap("mi_biblio_app/imagenes/icono.ico")
+
         self.crear_widgets()
 
         self.portada_label.bind("<Button-1>", self.seleccionar_portada_personalizada)

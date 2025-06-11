@@ -17,16 +17,18 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
         self.geometry("700x500")
         self.resizable(False, False)
 
+        self.iconbitmap("mi_biblio_app/imagenes/icono.ico")
+
         self.grid_columnconfigure((0, 1, 2), weight=1)
         self.grid_rowconfigure(1, weight=1)
 
         self.crear_widgets()
 
     def crear_widgets(self):
-        self.label_titulo = ctk.CTkLabel(self, text="Añadir libro", font=("Arial", 20))
+        self.label_titulo = ctk.CTkLabel(self, text="📚 Añadir libro 📚", font=("Arial", 20))
         self.label_titulo.grid(row=0, column=0, sticky="w", padx=20, pady=20)
 
-        self.entry_busqueda = ctk.CTkEntry(self, placeholder_text="Buscar por título, autor o ISBN")
+        self.entry_busqueda = ctk.CTkEntry(self, placeholder_text="Buscar por título, autor o ISBN...")
         self.entry_busqueda.grid(row=0, column=1, sticky="ew", padx=10)
 
         icono_lupa = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/lupa.png"), size=(30, 30))

@@ -1,6 +1,7 @@
 import customtkinter as ctk
 from ui.ventana_anhadir_libro import VentanaAnhadirLibro
 from ui.ventana_editar_libro import VentanaEditarLibro
+import tkinter as tk
 
 class VentanaElegirModo(ctk.CTkToplevel):
     def __init__(self, master, callback=None):
