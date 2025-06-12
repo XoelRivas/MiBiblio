@@ -1,7 +1,21 @@
 import sqlite3
+import os
+import sys
 
-def crear_tablas():
-    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+def get_database_path():
+    if getattr(sys, 'frozen', False):
+        base_path = sys._MEIPASS
+    else:
+        base_path = os.path.dirname(os.path.abspath(__file__))
+
+    return os.path.join(base_path, "miBiblio.db")
+
+def get_connection():
+    return sqlite3.connect(get_database_path())
+
+def crear_tablas(db_path=None):
+    db_path = db_path or get_database_path()
+    conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
     cursor.execute(
@@ -93,7 +107,7 @@ def crear_tablas():
 def actualizar_libro(libro, id_libro, id_editorial=None, ids_autores=None, ids_generos=None, conn=None, cursor=None):
     cerrar = False
     if conn is None or cursor is None:
-        conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+        conn = get_connection()
         cursor = conn.cursor()
         cerrar = True
 
@@ -153,7 +167,7 @@ def actualizar_libro(libro, id_libro, id_editorial=None, ids_autores=None, ids_g
         conn.close()
 
 def eliminar_libro(id_libro):
-    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("PRAGMA foreign_keys = ON")
 
@@ -197,7 +211,7 @@ def eliminar_libro(id_libro):
 def insertar_editorial(nombre, conn=None, cursor=None):
     cerrar = False
     if conn is None or cursor is None:
-        conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+        conn = get_connection()
         cursor = conn.cursor()
         cerrar = True
 
@@ -222,7 +236,7 @@ def insertar_autor(nombre_completo, conn=None, cursor=None):
 
     cerrar = False
     if conn is None or cursor is None:
-        conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+        conn = get_connection()
         cursor = conn.cursor()
         cerrar = True
 
@@ -246,7 +260,7 @@ def insertar_autor(nombre_completo, conn=None, cursor=None):
 def insertar_libro(libro, id_editorial=None, conn=None, cursor=None):
     cerrar = False
     if conn is None or cursor is None:
-        conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+        conn = get_connection()
         cursor = conn.cursor()
         cerrar = True
 
@@ -295,7 +309,7 @@ def insertar_libro(libro, id_editorial=None, conn=None, cursor=None):
 def insertar_genero(nombre_genero, conn=None, cursor=None):
     cerrar = False
     if conn is None or cursor is None:
-        conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+        conn = get_connection()
         cursor = conn.cursor()
         cerrar = True
 
@@ -319,7 +333,7 @@ def insertar_genero(nombre_genero, conn=None, cursor=None):
     return id_genero
 
 def relacionar_libro_autor(id_libro, id_autor):
-    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -330,7 +344,7 @@ def relacionar_libro_autor(id_libro, id_autor):
     conn.close()
 
 def relacionar_libro_genero(id_libro, id_genero):
-    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    conn = get_connection()
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -342,7 +356,7 @@ def relacionar_libro_genero(id_libro, id_genero):
     conn.close()
 
 def obtener_libros_guardados():
-    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -371,7 +385,7 @@ def obtener_libros_guardados():
     return libros
 
 def buscar_libros_por_titulo_o_autor(texto):
-    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    conn = get_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 

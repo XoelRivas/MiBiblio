@@ -9,6 +9,7 @@ import threading
 from ui.ventana_editar_libro import VentanaEditarLibro
 from tkinter import messagebox
 import os
+from utils.rutas import recurso_absoluto
 
 class VentanaPrincipal(ctk.CTk):
     def __init__(self):
@@ -20,8 +21,8 @@ class VentanaPrincipal(ctk.CTk):
         self.title("MiBiblio")
         self.geometry("900x600")
         self.minsize(800, 500)
-    
-        self.iconbitmap("mi_biblio_app/imagenes/icono.ico")
+
+        self.iconbitmap(recurso_absoluto("mi_biblio_app/imagenes/icono.ico"))
 
         self.grid_columnconfigure(0, weight=0) #Título
         self.grid_columnconfigure(1, weight=1) #Buscador
@@ -44,7 +45,7 @@ class VentanaPrincipal(ctk.CTk):
         self.entry_busqueda.grid(row=0, column=1, padx=10, pady=20, sticky="ew")
 
         #Botón lupa
-        icono_lupa = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/lupa.png"), size=(30, 30))
+        icono_lupa = ctk.CTkImage(light_image=Image.open(recurso_absoluto("mi_biblio_app/imagenes/lupa.png")), size=(30, 30))
         self.boton_buscar = ctk.CTkButton(self, image=icono_lupa, text="", width=50, height=50, corner_radius=15, command=self.accion_buscar)
         self.boton_buscar.grid(row=0, column=2, padx=10, pady=20)
 
@@ -54,7 +55,7 @@ class VentanaPrincipal(ctk.CTk):
         self.grid_rowconfigure(1, weight=1)
 
         #Botón añadir
-        icono_mas = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/plus.png"), size=(20, 20))
+        icono_mas = ctk.CTkImage(light_image=Image.open(recurso_absoluto("mi_biblio_app/imagenes/plus.png")), size=(20, 20))
         self.boton_anhadir = ctk.CTkButton(
             self, 
             image=icono_mas, text="", 
@@ -63,7 +64,7 @@ class VentanaPrincipal(ctk.CTk):
             corner_radius=15)
         self.boton_anhadir.place(relx=1.0, rely=1.0, x=-20, y=-20, anchor="se")
 
-        self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/sin_portada.png"), size=(100, 150))
+        self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open(recurso_absoluto("mi_biblio_app/imagenes/sin_portada.png")), size=(100, 150))
 
         self.mostrar_libros(self.libros)
 
@@ -123,9 +124,9 @@ class VentanaPrincipal(ctk.CTk):
 
             cover_id = libro.get("cover_id")
             if cover_id:
-                if cover_id.endswith(".png") and os.path.exists(f"mi_biblio_app/imagenes/{cover_id}"):
+                if cover_id.endswith(".png") and os.path.exists(recurso_absoluto(f"mi_biblio_app/imagenes/{cover_id}")):
                     try:
-                        imagen_local = Image.open(f"mi_biblio_app/imagenes/{cover_id}").resize((100, 150))
+                        imagen_local = Image.open(recurso_absoluto(f"mi_biblio_app/imagenes/{cover_id}")).resize((100, 150))
                         imagen = ctk.CTkImage(light_image=imagen_local, size=(100, 150))
                         imagen_label.configure(image=imagen)
                     except Exception as e:
