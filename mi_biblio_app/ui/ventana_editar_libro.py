@@ -4,7 +4,6 @@ from PIL import Image
 import urllib.request
 from io import BytesIO
 from database import actualizar_libro, eliminar_libro, insertar_libro, insertar_editorial, insertar_autor, insertar_genero
-import threading
 from tkcalendar import Calendar
 from datetime import datetime
 import tkinter as tk
@@ -68,7 +67,7 @@ class CustomDateEntry(ctk.CTkFrame):
         self.entry.configure(state="readonly")
 
 class VentanaEditarLibro(ctk.CTkToplevel):
-    def __init__(self, master, libro, callback=None):
+    def __init__(self, master, libro, callback=None, modo_edicion=False):
         super().__init__(master)
 
         self.libro = libro
@@ -80,6 +79,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         self.entradas_autor = []
         self.entradas_genero = []
         self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open("mi_biblio_app/portadas/sin_portada.png"), size=(120, 180))
+        self.modo_edicion = modo_edicion
         
         self.iconbitmap("mi_biblio_app/imagenes/icono.ico")
 
@@ -188,7 +188,8 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         self.portada_label.bind("<Leave>", lambda e: self.portada_label.configure(cursor=""))
 
         ctk.CTkButton(self, text="Guardar cambios", command=self.guardar_cambios).pack(side="left", padx=20, pady=(0, 20))
-        ctk.CTkButton(self, text="Eliminar libro", fg_color="red", hover_color="#8B0000", command=self.eliminar_libro).pack(side="left", padx=10, pady=(0, 20))
+        if self.modo_edicion:
+            ctk.CTkButton(self, text="Eliminar libro", fg_color="red", hover_color="#8B0000", command=self.eliminar_libro).pack(side="left", padx=10, pady=(0, 20))
         ctk.CTkButton(self, text="Cancelar", command=self.destroy).pack(side="left", padx=10, pady=(0, 20))
 
         self.mostrar_datos()

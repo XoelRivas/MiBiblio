@@ -63,7 +63,7 @@ class VentanaPrincipal(ctk.CTk):
             corner_radius=15)
         self.boton_anhadir.place(relx=1.0, rely=1.0, x=-20, y=-20, anchor="se")
 
-        self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/sin_portada.png"), size=(100, 150))
+        self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open("mi_biblio_app/portadas/sin_portada.png"), size=(100, 150))
 
         self.mostrar_libros(self.libros)
 
@@ -72,7 +72,7 @@ class VentanaPrincipal(ctk.CTk):
             widget.destroy()
 
         if not libros:
-            label = ctk.CTkLabel(self.frame_libros, text="No hay libros guardados.", font=self.fuente)
+            label = ctk.CTkLabel(self.frame_libros, text="Tú biblioteca está vacía.", font=self.fuente)
             label.pack(pady=10)
             return
         
@@ -92,7 +92,7 @@ class VentanaPrincipal(ctk.CTk):
 
             color_normal, color_hover = colores.get(estado, ("#3B8ED0", "#36719F"))
 
-            item_frame = ctk.CTkFrame(self.frame_libros, fg_color=color_normal, height=170)
+            item_frame = ctk.CTkFrame(self.frame_libros, fg_color=color_normal, height=190)
             item_frame.pack(fill="x", padx=10, pady=5)
             item_frame.grid_propagate(False)
 
@@ -162,7 +162,7 @@ class VentanaPrincipal(ctk.CTk):
             messagebox.showerror("Error", f"Ocurrió un error al buscar libros.\n{e}")
 
     def accion_editar_libro(self, libro):
-        ventana = VentanaEditarLibro(self, libro, callback=self.mostrar_libros_guardados)
+        ventana = VentanaEditarLibro(self, libro, callback=self.mostrar_libros_guardados, modo_edicion=True)
         ventana.lift()
         ventana.focus_force()
         ventana.grab_set()

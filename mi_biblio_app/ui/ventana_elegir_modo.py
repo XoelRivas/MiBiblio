@@ -25,7 +25,7 @@ class VentanaElegirModo(ctk.CTkToplevel):
 
     def accion_crear(self):
         self.destroy()
-        ventana = VentanaEditarLibro(self.master, libro=None, callback=self.callback)
+        ventana = VentanaEditarLibro(self.master, libro=None, callback=self.callback, modo_edicion=False)
         ventana.lift()
         ventana.focus_force()
         ventana.grab_set()

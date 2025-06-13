@@ -84,7 +84,7 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
         color_hover = "#36719F"
         texto = f"{libro['titulo']} - {libro['autor']} ({libro['anho']})"
 
-        item_frame = ctk.CTkFrame(self.frame_resultados, fg_color=color_normal, height=170)
+        item_frame = ctk.CTkFrame(self.frame_resultados, fg_color=color_normal, height=190)
         item_frame.pack(fill="x", padx=10, pady=5)
         item_frame.grid_propagate(False)
 
@@ -118,11 +118,18 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
                     with urllib.request.urlopen(url) as u:
                         raw_data = u.read()
                     im = Image.open(BytesIO(raw_data)).resize((100, 150))
-                    portada = ctk.CTkImage(light_image=im, size=(100, 150))
-                    self.after(0, lambda: imagen_label.configure(image=portada))
                 except Exception as e:
                     print("Error cargando portada:", e)
+                    im = Image.open("mi_biblio_app/portadas/sin_portada.png").resize((100, 150))
+
+                portada = ctk.CTkImage(light_image=im, size=(100, 150))
+                self.after(0, lambda: imagen_label.configure(image=portada))
             threading.Thread(target=cargar_portada, daemon=True).start()
+        else:
+            im = Image.open("mi_biblio_app/portadas/sin_portada.png").resize((100, 150))
+            portada = ctk.CTkImage(light_image=im, size=(100, 150))
+            imagen_label.configure(image=portada)
+        
 
     def seleccionar_libro(self, libro):
         id_editorial = None
