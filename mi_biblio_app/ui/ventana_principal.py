@@ -72,12 +72,13 @@ class VentanaPrincipal(ctk.CTk):
             widget.destroy()
 
         if not libros:
-            label = ctk.CTkLabel(self.frame_libros, text="No hay libros guardados.")
+            label = ctk.CTkLabel(self.frame_libros, text="No hay libros guardados.", font=self.fuente)
             label.pack(pady=10)
             return
         
         for libro in libros:
-            texto = f"{libro['titulo']}\n{libro['autor']} ({libro['fecha_publicacion']})"
+            fecha_publicacion = libro['fecha_publicacion'] if libro['fecha_publicacion'] else "Sin fecha de publicación"
+            texto = f"{libro['titulo'].upper()}\n{libro['autor']} ({fecha_publicacion})"
 
             estado = libro.get("estado", "-")
 

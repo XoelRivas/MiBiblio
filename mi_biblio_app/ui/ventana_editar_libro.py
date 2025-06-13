@@ -74,7 +74,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         self.libro = libro
         self.callback = callback
         self.title("Editar Libro")
-        self.geometry("900x800")
+        self.geometry("900x700")
         self.resizable(False, False)
         self.campos = {}
         self.entradas_autor = []
