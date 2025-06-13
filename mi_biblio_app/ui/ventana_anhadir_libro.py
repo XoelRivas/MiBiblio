@@ -82,7 +82,7 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
     def mostrar_resultado(self, libro):
         color_normal = "#3B8ED0"
         color_hover = "#36719F"
-        texto = f"{libro['titulo']} - {libro['autor']} ({libro['anho']})"
+        texto = f"{libro['titulo'].upper()} - {libro['autor']} ({libro['anho']})"
 
         item_frame = ctk.CTkFrame(self.frame_resultados, fg_color=color_normal, height=190)
         item_frame.pack(fill="x", padx=10, pady=5)
@@ -151,6 +151,11 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
 
         libro["portada"] = portada_path
 
+        if libro.get("anho"):
+            libro["fecha_publicacion"] = str(libro["anho"])
+        else:
+            libro["fecha_publicacion"] = ""
+
         id_libro = insertar_libro(libro, id_editorial)
 
         if libro.get("autor"):
@@ -158,7 +163,7 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
                 id_autor = insertar_autor(autor.strip())
                 relacionar_libro_autor(id_libro, id_autor)
 
-        messagebox.showinfo("Libro añadido", "Libro guardado correctamente.", parent=self)
+        messagebox.showinfo("Libro añadido", "Libro añadido a la biblioteca.", parent=self)
 
         if self.callback:
             self.callback()

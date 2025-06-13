@@ -389,7 +389,8 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             elif tipo_widget == "optionmenu":
                 datos_actualizados[clave] = widget.get()
             elif tipo_widget == "calendar":
-                datos_actualizados[clave] = widget.get()
+                valor = widget.get()
+                datos_actualizados[clave] =valor[:4] if valor else ""
 
         autores = [entry.get().strip() for entry in self.entradas_autor if entry.get().strip()]
         generos = [entry.get().strip() for entry in self.entradas_genero if entry.get().strip()]
