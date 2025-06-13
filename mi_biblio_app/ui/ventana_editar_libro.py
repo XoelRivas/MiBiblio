@@ -79,7 +79,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         self.campos = {}
         self.entradas_autor = []
         self.entradas_genero = []
-        self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/sin_portada.png"), size=(120, 180))
+        self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open("mi_biblio_app/portadas/sin_portada.png"), size=(120, 180))
         
         self.iconbitmap("mi_biblio_app/imagenes/icono.ico")
 
@@ -233,13 +233,18 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         
         ruta_imagen = filedialog.askopenfilename(
             title="Seleccionar imagen de portada",
-            filetypes=[("Imágenes PNG", "*.png")],
+            filetypes=[
+                ("Imágenes PNG", "*.png"),
+                ("Imágenes JPG", "*.jpg"),
+                ("Imágenes JPEG", "*.jpeg"),
+                ("Todos los formatos de imagen", "*.png *.jpg *.jpeg")
+            ],
             parent=self
         )
 
         if ruta_imagen:
             try:
-                carpeta_imagenes = "mi_biblio_app/imagenes"
+                carpeta_imagenes = "mi_biblio_app/portadas"
                 os.makedirs(carpeta_imagenes, exist_ok=True)
 
                 id_libro = self.libro.get("id", "temporal")
@@ -338,16 +343,24 @@ class VentanaEditarLibro(ctk.CTkToplevel):
                 else:
                     widget.set(widget.cget("values")[0])
 
-        if self.libro.get("cover_id"):
-            cover_id = self.libro["cover_id"]
-            if cover_id.endswith(".png") and os.path.exists(f"mi_biblio_app/imagenes/{cover_id}"):
-                imagen_local = Image.open(f"mi_biblio_app/imagenes/{cover_id}")
-                portada = ctk.CTkImage(light_image=imagen_local, size=(120, 180))
-                self.portada_label.configure(image=portada, text="")
-            else:
-                url = f"https://covers.openlibrary.org/b/id/{self.libro['cover_id']}-L.jpg"
-                threading.Thread(target=self.cargar_portada, args=(url,), daemon=True).start()
-        else:
+        cover_id = self.libro.get("cover_id")
+        imagen_cargada = False
+
+        if cover_id:
+            ruta_base = f"mi_biblio_app/portadas/{cover_id}"
+            for ext in [".jpg", ".png", ".jpeg", ".png"]:
+                ruta = ruta_base if ruta_base.endswith(ext) else ruta_base + ext
+                if os.path.exists(ruta):
+                    try:
+                        imagen_local = Image.open(ruta)
+                        portada = ctk.CTkImage(light_image=imagen_local, size=(120, 180))
+                        self.portada_label.configure(image=portada, text="")
+                        imagen_cargada = True
+                        break
+                    except Exception as e:
+                        print(f"Error cargando portada desde {ruta}: {e}")
+
+        if not imagen_cargada:
             self.portada_label.configure(image=self.imagen_sin_portada, text="")
 
     def cargar_portada(self, url):
@@ -421,21 +434,31 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             "Eliminar", 
             "¿Estás seguro de que quieres eliminar este libro?",
             parent=self
-            )
+        )
         if confirm:
             try:
+                cover_id = self.libro.get("cover_id")
+                if cover_id:
+                    posibles_extensiones = [".png", ".jpg", ".jpeg"]
+                    for ext in posibles_extensiones:
+                        ruta_portada = os.path.join("mi_biblio_app", "portadas", f"{cover_id}{ext}")
+                        if os.path.exists(ruta_portada):
+                            os.remove(ruta_portada)
+                            break
+
                 eliminar_libro(self.libro["id"])
+
                 messagebox.showinfo(
                     "Eliminado", 
                     "Libro eliminado correctamente.",
                     parent=self
-                    )
+                )
                 self.destroy()
                 if self.callback:
                     self.callback()
             except Exception as e:
                 messagebox.showerror(
                     "Error", 
-                    f"No se pudo elimnar el libro.\n{e}",
+                    f"No se pudo eliminar el libro.\n{e}",
                     parent=self
-                    )
+                )

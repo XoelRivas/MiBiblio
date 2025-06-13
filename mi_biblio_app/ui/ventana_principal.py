@@ -123,41 +123,25 @@ class VentanaPrincipal(ctk.CTk):
             imagen_label.bind("<Leave>", on_leave)
 
             cover_id = libro.get("cover_id")
-            if cover_id:
-                if cover_id.endswith(".png") and os.path.exists(f"mi_biblio_app/imagenes/{cover_id}"):
+            ruta_base = f"mi_biblio_app/portadas/{cover_id}"
+            for ext in [".jpg", ".png", ".jpeg"]:
+                ruta = ruta_base + ext
+                if os.path.exists(ruta):
                     try:
-                        imagen_local = Image.open(f"mi_biblio_app/imagenes/{cover_id}").resize((100, 150))
+                        imagen_local = Image.open(ruta).resize((100, 150))
                         imagen = ctk.CTkImage(light_image=imagen_local, size=(100, 150))
                         imagen_label.configure(image=imagen)
+                        break
                     except Exception as e:
                         print("Error cargando portada local:", e)
-                        imagen_label.configure(image=self.imagen_sin_portada)
-                else:
-                    try:
-                        url = f"https://covers.openlibrary.org/b/id/{libro['cover_id']}-M.jpg"
-                        self.cargar_portada_async(url, imagen_label)
-                    except Exception as e:
-                        print("Error cargando portada:", e)
                         imagen_label.configure(image=self.imagen_sin_portada)
             else:
                 imagen_label.configure(image=self.imagen_sin_portada)
 
+
             item_frame.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
             texto_label.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
             imagen_label.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
-
-    def cargar_portada_async(self, url, label):
-        def task():
-            try:
-                with urllib.request.urlopen(url) as u:
-                    raw_data = u.read()
-                im = Image.open(BytesIO(raw_data)).resize((100, 150))
-                imagen = ctk.CTkImage(light_image=im, size=(100, 150))
-                self.after(0, lambda: label.configure(image=imagen))
-            except Exception as e:
-                print("Error cargando portada:", e)
-
-        threading.Thread(target=task, daemon=True).start()
 
     def accion_anhadir(self):
         ventana = VentanaElegirModo(self, callback=self.mostrar_libros_guardados)

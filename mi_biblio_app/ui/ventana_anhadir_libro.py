@@ -7,6 +7,7 @@ import urllib.request
 import threading
 import time
 from tkinter import messagebox
+import os
 
 class VentanaAnhadirLibro(ctk.CTkToplevel):
     def __init__(self, master, callback=None):
@@ -125,6 +126,24 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
 
     def seleccionar_libro(self, libro):
         id_editorial = None
+
+        portada_path = None
+        if libro.get("cover_id"):
+            try:
+                url = f"https://covers.openlibrary.org/b/id/{libro['cover_id']}-L.jpg"
+                with urllib.request.urlopen(url) as u:
+                    raw_data = u.read()
+                im = Image.open(BytesIO(raw_data))
+                portada_dir = "mi_biblio_app/portadas"
+                os.makedirs(portada_dir, exist_ok=True)
+                portada_path = os.path.join(portada_dir, f"{libro['cover_id']}.jpg")
+                im.save(portada_path)
+            except Exception as e:
+                print(f"Error descargando la portada: {e}")
+                portada_path = None
+
+        libro["portada"] = portada_path
+
         id_libro = insertar_libro(libro, id_editorial)
 
         if libro.get("autor"):
