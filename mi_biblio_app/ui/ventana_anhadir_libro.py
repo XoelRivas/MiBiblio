@@ -9,7 +9,18 @@ import time
 from tkinter import messagebox
 import os
 
+"""
+Ventana modal para buscar libros en una API externa y añadirlos a la base de datos local.
+Permite buscar por título, autor o ISBN y seleccionar un resultado para importarlo.
+"""
 class VentanaAnhadirLibro(ctk.CTkToplevel):
+    """
+    Inicializa la ventana y sus widgets principales.
+
+    Args:
+        master: Ventana principal o padre.
+        callback: Función a ejecutar tras añadir un libro.
+    """
     def __init__(self, master, callback=None):
         super().__init__(master)
         self.callback = callback
@@ -25,6 +36,9 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
 
         self.crear_widgets()
 
+    """
+    Crea y coloca los widgets de la ventana: barra de búsqueda, botón y frame de resultados.
+    """
     def crear_widgets(self):
         self.label_titulo = ctk.CTkLabel(self, text="📚 Añadir libro 📚", font=("Arial", 20))
         self.label_titulo.grid(row=0, column=0, sticky="w", padx=20, pady=20)
@@ -39,6 +53,10 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
         self.frame_resultados = ctk.CTkScrollableFrame(self)
         self.frame_resultados.grid(row=1, column=0, columnspan=3, padx=20, pady=10, sticky="nsew")
 
+    """
+    Lanza la búsqueda en la API externa según el texto introducido.
+    Limpia resultados anteriores y muestra animación de carga.
+    """
     def buscar_libro(self):
         titulo = self.entry_busqueda.get().strip()
         if not titulo:
@@ -54,11 +72,19 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
         threading.Thread(target=self.animar_texto_cargando, daemon=True).start()
         threading.Thread(target=self.ejecutar_busqueda, args=(titulo,), daemon=True).start()
 
+    """
+    Ejecuta la búsqueda en la API y muestra los resultados al finalizar.
+    Se ejecuta en un hilo aparte para no bloquear la interfaz.
+    """
     def ejecutar_busqueda(self, titulo):
         resultados = buscar_libros_por_titulo_autor_isbn(titulo)
         self.buscando = False
         self.after(0, self.mostrar_resultados, resultados)
 
+    """
+    Muestra los resultados de la búsqueda en el frame de resultados.
+    Si no hay resultados, muestra un mensaje informativo.
+    """
     def mostrar_resultados(self, resultados):
         self.label_cargando.destroy()
 
@@ -70,6 +96,10 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
         for libro in resultados:
             self.mostrar_resultado(libro)
 
+    """
+    Muestra una animación de puntos suspensivos en el mensaje de carga mientras se realiza la búsqueda.
+    Se ejecuta en un hilo aparte.
+    """
     def animar_texto_cargando(self):
         puntos = ["Buscando.", "Buscando..", "Buscando..."]
         etapa = 0
@@ -79,6 +109,10 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
             etapa += 1
             time.sleep(0.5)
 
+    """
+    Muestra un resultado individual de la búsqueda, con portada y datos principales.
+    Permite seleccionar el libro haciendo clic en cualquier parte del item.
+    """
     def mostrar_resultado(self, libro):
         color_normal = "#3B8ED0"
         color_hover = "#36719F"
@@ -111,6 +145,7 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
         texto_label.bind("<Button-1>", lambda e, l=libro: self.seleccionar_libro(l))
         imagen_label.bind("<Button-1>", lambda e, l=libro: self.seleccionar_libro(l))
 
+        # Carga la portada del libro si existe, si no muestra una imagen por defecto
         if libro.get("cover_id"):
             def cargar_portada():
                 try:
@@ -130,11 +165,15 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
             portada = ctk.CTkImage(light_image=im, size=(100, 150))
             imagen_label.configure(image=portada)
         
-
+    """
+    Inserta el libro seleccionado en la base de datos local, descarga la portada si existe,
+    y relaciona los autores. Llama al callback si está definido.
+    """
     def seleccionar_libro(self, libro):
         id_editorial = None
 
         portada_path = None
+        # Descarga la portada en tamaño grande si existe y la guarda localmente
         if libro.get("cover_id"):
             try:
                 url = f"https://covers.openlibrary.org/b/id/{libro['cover_id']}-L.jpg"
@@ -151,6 +190,7 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
 
         libro["portada"] = portada_path
 
+        # Ajusta el campo de fecha de publicación si existe el año
         if libro.get("anho"):
             libro["fecha_publicacion"] = str(libro["anho"])
         else:

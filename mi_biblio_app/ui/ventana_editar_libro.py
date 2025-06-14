@@ -10,7 +10,15 @@ import tkinter as tk
 import sqlite3
 import os
 
+"""
+Clase que implementa un campo de entrada de fecha personalizado.
+Permite al usuario seleccionar una fecha mediante un calendario emergente,
+mostrando la fecha seleccionada en un campo de solo lectura.
+"""
 class CustomDateEntry(ctk.CTkFrame):
+    """
+    Inicializa un campo de entrada de fecha personalizado con un formato específico.
+    """
     def __init__(self, master=None, date_format="YYYY-mm-dd", **kwargs):
         super().__init__(master)
         self.date_format = date_format
@@ -23,6 +31,9 @@ class CustomDateEntry(ctk.CTkFrame):
 
         self.top = None
 
+    """
+    Abre una ventana emergente con un calendario para seleccionar la fecha.
+    """
     def open_calendar(self, event=None):
         if self.top is not None and self.top.winfo_exists():
             return
@@ -42,11 +53,17 @@ class CustomDateEntry(ctk.CTkFrame):
         button = tk.Button(self.top, text="Aceptar", command=self.set_selected_date)
         button.pack(pady=(0, 10))
 
+    """
+    Cierra la ventana emergente del calendario.
+    """
     def close_calendar(self):
         if self.top is not None:
             self.top.destroy()
             self.top = None
 
+    """
+    Establece la fecha seleccionada en el campo de entrada y cierra el calendario.
+    """
     def set_selected_date(self):
         self.selected_date = self.cal.get_date()
         self.entry.configure(state="normal")
@@ -55,9 +72,15 @@ class CustomDateEntry(ctk.CTkFrame):
         self.entry.configure(state="readonly")
         self.close_calendar()
 
+    """
+    Devuelve la fecha seleccionada como cadena.
+    """
     def get(self):
         return self.selected_date or ""
 
+    """
+    Establece una fecha específica en el campo de entrada.
+    """
     def set_date(self, date):
         self.selected_date = date
         self.entry.configure(state="normal")
@@ -66,7 +89,16 @@ class CustomDateEntry(ctk.CTkFrame):
             self.entry.insert(0, date)
         self.entry.configure(state="readonly")
 
+"""
+Clase que representa una ventana para crear o editar la información de un libro.
+Permite gestionar todos los campos relevantes, incluyendo autores, géneros,
+portada, fechas y otros datos, así como guardar, actualizar o eliminar el libro.
+"""
 class VentanaEditarLibro(ctk.CTkToplevel):
+    """
+    Inicializa la ventana para editar o crear un libro.
+    Carga los datos del libro si existen y prepara los widgets.
+    """
     def __init__(self, master, libro, callback=None, modo_edicion=False):
         super().__init__(master)
 
@@ -86,6 +118,11 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         self.crear_widgets()
 
         self.portada_label.bind("<Button-1>", self.seleccionar_portada_personalizada)
+
+    """
+    Crea y organiza todos los widgets de la ventana, incluyendo campos de entrada,
+    botones y el área para la portada del libro.
+    """
     def crear_widgets(self):
         self.frame = ctk.CTkScrollableFrame(self)
         self.frame.pack(fill="both", expand=True, padx=20, pady=20)
@@ -194,6 +231,10 @@ class VentanaEditarLibro(ctk.CTkToplevel):
 
         self.mostrar_datos()
 
+    """
+    Muestra un cuadro de diálogo personalizado para confirmar una acción.
+    Devuelve True si el usuario confirma, False en caso contrario.
+    """
     def dialogo_confirmacion(self, titulo, mensaje):
         respuesta = {"valor": None}
 
@@ -227,6 +268,10 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         self.wait_window(ventana)
         return respuesta["valor"]
 
+    """
+    Permite al usuario seleccionar una imagen de portada personalizada para el libro.
+    La imagen seleccionada se guarda y se muestra en la interfaz.
+    """
     def seleccionar_portada_personalizada(self, event=None):
         respuesta = self.dialogo_confirmacion("Cambiar portada", "¿Desea añadir una portada?")
         if not respuesta:
@@ -263,6 +308,10 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             except Exception as e:
                 messagebox.showerror("Error", f"No se pudo cargar la imagen seleccionada.\n{e}", parent=self)
 
+    """
+    Añade un nuevo campo de entrada para introducir un autor adicional.
+    Muestra el botón para eliminar autores si hay más de uno.
+    """
     def anadir_entrada_autor(self):
         row = len(self.entradas_autor)
         entry = ctk.CTkEntry(self.frame_autores_contenido, width=400)
@@ -271,6 +320,10 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         if len(self.entradas_autor) > 1:
             self.boton_quitar_autor.grid()
 
+    """
+    Añade un nuevo campo de entrada para introducir un género adicional.
+    Muestra el botón para eliminar géneros si hay más de uno.
+    """
     def anadir_entrada_genero(self):
         row = len(self.entradas_genero)
         entry = ctk.CTkEntry(self.frame_generos_contenido, width=400)
@@ -279,6 +332,10 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         if len(self.entradas_genero) > 1:
             self.boton_quitar_genero.grid()
 
+    """
+    Elimina el último campo de entrada de autor si hay más de uno.
+    Oculta el botón de eliminar si solo queda un campo.
+    """
     def quitar_entrada_autor(self):
         if len(self.entradas_autor) > 1:
             entry = self.entradas_autor.pop()
@@ -286,6 +343,10 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         if len(self.entradas_autor) == 1:
             self.boton_quitar_autor.grid_remove()
 
+    """
+    Elimina el último campo de entrada de género si hay más de uno.
+    Oculta el botón de eliminar si solo queda un campo.
+    """
     def quitar_entrada_genero(self):
         if len(self.entradas_genero) > 1:
             entry = self.entradas_genero.pop()
@@ -293,6 +354,10 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         if len(self.entradas_genero) == 1:
             self.boton_quitar_genero.grid_remove()
 
+    """
+    Muestra los datos del libro en los campos correspondientes de la interfaz.
+    Carga la portada si está disponible.
+    """
     def mostrar_datos(self):
         if self.libro is None:
             self.portada_label.configure(image=self.imagen_sin_portada, text="")
@@ -364,6 +429,9 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         if not imagen_cargada:
             self.portada_label.configure(image=self.imagen_sin_portada, text="")
 
+    """
+    Descarga y muestra una imagen de portada desde una URL.
+    """
     def cargar_portada(self, url):
         try:
             with urllib.request.urlopen(url) as u:
@@ -375,6 +443,10 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             print("Error cargando portada:", e)
             self.after(0, lambda: self.portada_label.configure(text="Error al cargar portada"))
 
+    """
+    Recoge los datos introducidos por el usuario y los guarda en la base de datos.
+    Si es un libro nuevo, lo inserta; si es existente, lo actualiza.
+    """
     def guardar_cambios(self):
         datos_actualizados = {}
 
@@ -431,6 +503,10 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo guardar el libro.\n{e}", parent=self)
 
+    """
+    Elimina el libro actual de la base de datos tras confirmación del usuario.
+    También elimina la imagen de portada asociada si existe.
+    """
     def eliminar_libro(self):
         confirm = messagebox.askyesno(
             "Eliminar", 

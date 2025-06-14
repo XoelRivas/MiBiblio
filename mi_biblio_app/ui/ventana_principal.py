@@ -8,7 +8,14 @@ from ui.ventana_editar_libro import VentanaEditarLibro
 from tkinter import messagebox
 import os
 
+"""
+Ventana principal de la aplicación MiBiblio.
+Permite visualizar, buscar, añadir y editar libros de la biblioteca.
+"""
 class VentanaPrincipal(ctk.CTk):
+    """
+    Inicializa la ventana principal, configura la interfaz y carga los libros guardados.
+    """
     def __init__(self):
         super().__init__()
 
@@ -28,10 +35,16 @@ class VentanaPrincipal(ctk.CTk):
 
         self.fuente = ("Arial", 20)
 
+        # Carga los libros guardados desde la base de datos
         self.libros = obtener_libros_guardados()
 
         self.crear_widgets()
 
+
+    """
+    Crea y coloca todos los widgets principales de la interfaz:
+    título, barra de búsqueda, botón de búsqueda, lista de libros y botón de añadir.
+    """
     def crear_widgets(self):
         self.label_titulo = ctk.CTkLabel(self, text="📚 MiBiblio 📚", font=("Arial", 30))
         self.label_titulo.grid(row=0, column=0, padx=20, pady=20, sticky="w")
@@ -60,7 +73,14 @@ class VentanaPrincipal(ctk.CTk):
 
         self.mostrar_libros(self.libros)
 
+
+    """
+    Muestra la lista de libros en el frame principal.
+    Cada libro se representa con un frame que incluye título, autor, año y portada.
+    Si no hay libros, muestra un mensaje indicativo.
+    """
     def mostrar_libros(self, libros):
+        # Limpia el frame antes de mostrar los libros
         for widget in self.frame_libros.winfo_children():
             widget.destroy()
 
@@ -70,17 +90,20 @@ class VentanaPrincipal(ctk.CTk):
             return
         
         for libro in libros:
-
+            # Elimina duplicados en autores y géneros por si la consulta SQL los devuelve repetidos
             autores = libro["autor"].split(", ") if libro.get("autor") else []
             libro["autor"] = ", ".join(sorted(set(autores), key=autores.index))
 
             generos = libro["genero"].split(", ") if libro.get("genero") else []
             libro["genero"] = ", ".join(sorted(set(generos), key=generos.index))
+
+            # Muestra solo el año de publicación si está disponible
             fecha_publicacion = libro['fecha_publicacion'] if libro['fecha_publicacion'] else "Sin fecha de publicación"
             texto = f"{libro['titulo'].upper()}\n{libro['autor']} ({fecha_publicacion})"
 
             estado = libro.get("estado", "-")
 
+            # Diccionario de colores según el estado del libro
             colores = {
                 "-": ("#3B8ED0", "#36719F"),
                 "Leído": ("#4CAF50", "#388E3C"),
@@ -91,10 +114,12 @@ class VentanaPrincipal(ctk.CTk):
 
             color_normal, color_hover = colores.get(estado, ("#3B8ED0", "#36719F"))
 
+            # Frame individual para cada libro
             item_frame = ctk.CTkFrame(self.frame_libros, fg_color=color_normal, height=190)
             item_frame.pack(fill="x", padx=10, pady=5)
             item_frame.grid_propagate(False)
 
+            # Funciones para el efecto hover en el frame del libro
             def make_hover_callbacks(frame, normal_color, hover):
                 def on_enter(e, f=frame, hc=hover):
                     f.configure(fg_color=hc)
@@ -121,6 +146,9 @@ class VentanaPrincipal(ctk.CTk):
             imagen_label.bind("<Enter>", on_enter)
             imagen_label.bind("<Leave>", on_leave)
 
+            # Lógica para mostrar la portada del libro:
+            # Si cover_id es un nombre de archivo con extensión, lo usa directamente.
+            # Si es solo un id, prueba con varias extensiones.
             cover_id = libro.get("cover_id")
             if cover_id:
                 if cover_id.endswith((".jpg", ".png", ".jpeg")):
@@ -153,13 +181,22 @@ class VentanaPrincipal(ctk.CTk):
             else:
                 imagen_label.configure(image=self.imagen_sin_portada)
 
+            # Asocia la acción de editar libro al hacer clic en cualquier parte del frame
             item_frame.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
             texto_label.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
             imagen_label.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
 
+
+    """
+    Abre la ventana para elegir el modo de añadir un libro (nuevo o desde la API).
+    """
     def accion_anhadir(self):
         ventana = VentanaElegirModo(self, callback=self.mostrar_libros_guardados)
 
+    """
+    Realiza la búsqueda de libros por título o autor.
+    Si el campo de búsqueda está vacío, muestra todos los libros guardados.
+    """
     def accion_buscar(self):
         texto = self.entry_busqueda.get().strip().lower()
         if not texto:
@@ -175,12 +212,20 @@ class VentanaPrincipal(ctk.CTk):
         except Exception as e:
             messagebox.showerror("Error", f"Ocurrió un error al buscar libros.\n{e}")
 
+
+    """
+    Abre la ventana de edición para el libro seleccionado.
+    """
     def accion_editar_libro(self, libro):
         ventana = VentanaEditarLibro(self, libro, callback=self.mostrar_libros_guardados, modo_edicion=True)
         ventana.lift()
         ventana.focus_force()
         ventana.grab_set()
 
+
+    """
+    Recarga la lista de libros guardados desde la base de datos y los muestra en pantalla.
+    """
     def mostrar_libros_guardados(self):
         self.libros = obtener_libros_guardados()
         self.mostrar_libros(self.libros)

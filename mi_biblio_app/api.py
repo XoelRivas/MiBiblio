@@ -1,6 +1,16 @@
 import requests
 import re
 
+"""
+Extrae el ISBN principal de un documento de Open Library.
+Busca primero en el campo 'isbn' y, si no existe, intenta extraerlo del campo 'ia'.
+
+Args:
+    doc (dict): Documento de Open Library.
+
+Returns:
+    str or None: ISBN encontrado o None si no existe.
+"""
 def extraer_isbn(doc):
     if "isbn" in doc and isinstance(doc["isbn"], list):
         return doc["isbn"][0]
@@ -12,6 +22,17 @@ def extraer_isbn(doc):
 
     return None
 
+"""
+Busca libros en Open Library por título, autor o ISBN.
+Si la consulta es un ISBN válido, busca por ISBN; si no, realiza una búsqueda general.
+
+Args:
+    query (str): Texto de búsqueda (título, autor o ISBN).
+    max_resultados (int): Número máximo de resultados a devolver.
+
+Returns:
+    list: Lista de diccionarios con información de cada libro encontrado.
+"""
 def buscar_libros_por_titulo_autor_isbn(query, max_resultados=20):
     url = "https://openlibrary.org/search.json"
 
@@ -29,6 +50,7 @@ def buscar_libros_por_titulo_autor_isbn(query, max_resultados=20):
         datos = respuesta.json()
 
         resultados = []
+        # Procesa los documentos devueltos por la API
         for doc in datos.get("docs", [])[:max_resultados]:
             isbn = extraer_isbn(doc)
             

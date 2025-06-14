@@ -1,9 +1,14 @@
 import sqlite3
 
+"""
+Crea todas las tablas necesarias en la base de datos si no existen.
+Incluye tablas para autores, géneros, editoriales, libros y las tablas de relación.
+"""
 def crear_tablas():
     conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
     cursor = conn.cursor()
 
+    # Tabla de autores
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS autores (
@@ -15,6 +20,7 @@ def crear_tablas():
     """
     )
 
+    # Tabla de géneros literarios
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS generos (
@@ -24,6 +30,7 @@ def crear_tablas():
     """
     )
 
+    # Tabla de editoriales
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS editoriales (
@@ -33,6 +40,7 @@ def crear_tablas():
     """
     )
 
+    # Tabla de libros
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS libros (
@@ -58,11 +66,13 @@ def crear_tablas():
     """
     )
 
+    # Añadir columna cover_id a la tabla libros si no existe
     try:
         cursor.execute("ALTER TABLE libros ADD COLUMN cover_id TEXT")
     except sqlite3.OperationalError:
         pass
 
+    # Tabla de relación entre libros y autores
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS libros_autores (
@@ -75,6 +85,7 @@ def crear_tablas():
 """
     )
 
+    # Tabla de relación entre libros y géneros
     cursor.execute(
         """
     CREATE TABLE IF NOT EXISTS libros_generos (
@@ -90,6 +101,10 @@ def crear_tablas():
     conn.commit()
     conn.close()
 
+"""
+Actualiza los datos de un libro existente, así como sus relaciones con autores y géneros.
+Si no se pasan conexión y cursor, los crea y los cierra internamente.
+"""
 def actualizar_libro(libro, id_libro, id_editorial=None, ids_autores=None, ids_generos=None, conn=None, cursor=None):
     cerrar = False
     if conn is None or cursor is None:
@@ -97,6 +112,7 @@ def actualizar_libro(libro, id_libro, id_editorial=None, ids_autores=None, ids_g
         cursor = conn.cursor()
         cerrar = True
 
+    # Actualiza los campos principales del libro
     cursor.execute("""
         UPDATE libros SET
             titulo = ?,
@@ -138,11 +154,13 @@ def actualizar_libro(libro, id_libro, id_editorial=None, ids_autores=None, ids_g
         id_libro
     ))
 
+    # Actualiza las relaciones con autores y géneros
     cursor.execute("DELETE FROM libros_autores WHERE id_libro = ?", (id_libro,))
     if ids_autores:
         for id_autor in ids_autores:
             cursor.execute("INSERT OR IGNORE INTO libros_autores (id_libro, id_autor) VALUES (?, ?)", (id_libro, id_autor))
 
+    # Actualiza las relaciones con géneros
     cursor.execute("DELETE FROM libros_generos WHERE id_libro = ?", (id_libro,))
     if ids_generos:
         for id_genero in ids_generos:
@@ -152,12 +170,17 @@ def actualizar_libro(libro, id_libro, id_editorial=None, ids_autores=None, ids_g
     if cerrar:
         conn.close()
 
+"""
+Elimina un libro y, si corresponde, elimina autores, géneros y editorial asociados
+que hayan quedado huérfanos (sin ningún libro relacionado).
+"""
 def eliminar_libro(id_libro):
     conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
     cursor = conn.cursor()
-    cursor.execute("PRAGMA foreign_keys = ON")
+    cursor.execute("PRAGMA foreign_keys = ON") # Activa las claves foráneas
 
     try:
+        # Obtiene los autores y géneros relacionados antes de eliminar el libro
         cursor.execute("SELECT id_autor FROM libros_autores WHERE id_libro = ?", (id_libro,))
         autores = cursor.fetchall()
 
@@ -168,18 +191,22 @@ def eliminar_libro(id_libro):
         resultado_editorial = cursor.fetchall()
         id_editorial = resultado_editorial[0][0] if resultado_editorial else None
 
+        # Elimina el libro
         cursor.execute("DELETE FROM libros WHERE id = ?", (id_libro,))
 
+        # Elimina autores huérfanos
         for (id_autor,) in autores:
             cursor.execute("SELECT COUNT(*) FROM libros_autores WHERE id_autor = ?", (id_autor,))
             if cursor.fetchone()[0] == 0:
                 cursor.execute("DELETE FROM autores WHERE id = ?", (id_autor,))
 
+        # Elimina géneros huérfanos
         for (id_genero,) in generos:
             cursor.execute("SELECT COUNT(*) FROM libros_generos WHERE id_genero = ?", (id_genero,))
             if cursor.fetchone()[0] == 0:
                 cursor.execute("DELETE FROM generos WHERE id = ?", (id_genero,))
 
+        # Elimina editorial huérfana
         if id_editorial is not None:
             cursor.execute("SELECT COUNT(*) FROM libros WHERE id_editorial = ?", (id_editorial,))
             if cursor.fetchone()[0] == 0:
@@ -194,6 +221,10 @@ def eliminar_libro(id_libro):
     finally:
         conn.close()
 
+"""
+Inserta una editorial si no existe y devuelve su id.
+Permite reutilizar una conexión/cursor existente.
+"""
 def insertar_editorial(nombre, conn=None, cursor=None):
     cerrar = False
     if conn is None or cursor is None:
@@ -212,6 +243,11 @@ def insertar_editorial(nombre, conn=None, cursor=None):
 
     return id_editorial
 
+"""
+Inserta un autor si no existe y devuelve su id.
+Divide el nombre completo en nombre y apellido (el último término es el apellido).
+Permite reutilizar una conexión/cursor existente.
+"""
 def insertar_autor(nombre_completo, conn=None, cursor=None):
     partes = nombre_completo.strip().split()
     if len(partes) == 1:
@@ -243,6 +279,11 @@ def insertar_autor(nombre_completo, conn=None, cursor=None):
         conn.close()
     return id_autor
 
+"""
+Inserta un libro en la base de datos y devuelve su id.
+Si ya existe (por título e ISBN), recupera su id.
+Permite reutilizar una conexión/cursor existente.
+"""
 def insertar_libro(libro, id_editorial=None, conn=None, cursor=None):
     cerrar = False
     if conn is None or cursor is None:
@@ -279,6 +320,7 @@ def insertar_libro(libro, id_editorial=None, conn=None, cursor=None):
 
     id_libro = cursor.lastrowid
 
+    # Si el libro ya existía, recupera su id
     if not id_libro:
         cursor.execute(
             "SELECT id FROM libros WHERE titulo = ? AND isbn IS ?",
@@ -292,6 +334,10 @@ def insertar_libro(libro, id_editorial=None, conn=None, cursor=None):
 
     return id_libro
 
+"""
+Inserta un género si no existe y devuelve su id.
+Permite reutilizar una conexión/cursor existente.
+"""
 def insertar_genero(nombre_genero, conn=None, cursor=None):
     cerrar = False
     if conn is None or cursor is None:
@@ -318,6 +364,9 @@ def insertar_genero(nombre_genero, conn=None, cursor=None):
 
     return id_genero
 
+"""
+Relaciona un libro con un autor en la tabla de relación muchos a muchos.
+"""
 def relacionar_libro_autor(id_libro, id_autor):
     conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
     cursor = conn.cursor()
@@ -329,6 +378,9 @@ def relacionar_libro_autor(id_libro, id_autor):
     conn.commit()
     conn.close()
 
+"""
+Relaciona un libro con un género en la tabla de relación muchos a muchos.
+"""
 def relacionar_libro_genero(id_libro, id_genero):
     conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
     cursor = conn.cursor()
@@ -341,6 +393,10 @@ def relacionar_libro_genero(id_libro, id_genero):
     conn.commit()
     conn.close()
 
+"""
+Recupera todos los libros guardados en la base de datos, incluyendo información
+de autores, géneros y editorial, agrupando los autores y géneros por libro.
+"""
 def obtener_libros_guardados():
     conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
     conn.row_factory = sqlite3.Row
@@ -370,6 +426,10 @@ def obtener_libros_guardados():
     conn.close()
     return libros
 
+"""
+Busca libros cuyo título o autor coincida (parcialmente, sin distinción de mayúsculas/minúsculas)
+con el texto proporcionado.
+"""
 def buscar_libros_por_titulo_o_autor(texto):
     conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
     conn.row_factory = sqlite3.Row
