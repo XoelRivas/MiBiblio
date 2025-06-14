@@ -3,9 +3,7 @@ from PIL import Image
 from ui.ventana_anhadir_libro import VentanaAnhadirLibro
 from ui.ventana_elegir_modo import VentanaElegirModo
 from database import obtener_libros_guardados, buscar_libros_por_titulo_o_autor
-import urllib.request
 from io import BytesIO
-import threading
 from ui.ventana_editar_libro import VentanaEditarLibro
 from tkinter import messagebox
 import os
@@ -23,10 +21,10 @@ class VentanaPrincipal(ctk.CTk):
     
         self.iconbitmap("mi_biblio_app/imagenes/icono.ico")
 
-        self.grid_columnconfigure(0, weight=0) #Título
-        self.grid_columnconfigure(1, weight=1) #Buscador
-        self.grid_columnconfigure(2, weight=0) #Lupa
-        self.grid_rowconfigure(1, weight=1) #Botón +
+        self.grid_columnconfigure(0, weight=0)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(2, weight=0)
+        self.grid_rowconfigure(1, weight=1)
 
         self.fuente = ("Arial", 20)
 
@@ -35,25 +33,20 @@ class VentanaPrincipal(ctk.CTk):
         self.crear_widgets()
 
     def crear_widgets(self):
-        #Título
         self.label_titulo = ctk.CTkLabel(self, text="📚 MiBiblio 📚", font=("Arial", 30))
         self.label_titulo.grid(row=0, column=0, padx=20, pady=20, sticky="w")
 
-        #Buscador
         self.entry_busqueda = ctk.CTkEntry(self, placeholder_text="Buscar libros por título o autor...")
         self.entry_busqueda.grid(row=0, column=1, padx=10, pady=20, sticky="ew")
 
-        #Botón lupa
         icono_lupa = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/lupa.png"), size=(30, 30))
         self.boton_buscar = ctk.CTkButton(self, image=icono_lupa, text="", width=50, height=50, corner_radius=15, command=self.accion_buscar)
         self.boton_buscar.grid(row=0, column=2, padx=10, pady=20)
 
-        #Frame libros
         self.frame_libros = ctk.CTkScrollableFrame(self)
         self.frame_libros.grid(row=1, column=0, columnspan=2, padx=20, pady=(0, 10), sticky="nsew")
         self.grid_rowconfigure(1, weight=1)
 
-        #Botón añadir
         icono_mas = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/plus.png"), size=(20, 20))
         self.boton_anhadir = ctk.CTkButton(
             self, 
@@ -77,6 +70,12 @@ class VentanaPrincipal(ctk.CTk):
             return
         
         for libro in libros:
+
+            autores = libro["autor"].split(", ") if libro.get("autor") else []
+            libro["autor"] = ", ".join(sorted(set(autores), key=autores.index))
+
+            generos = libro["genero"].split(", ") if libro.get("genero") else []
+            libro["genero"] = ", ".join(sorted(set(generos), key=generos.index))
             fecha_publicacion = libro['fecha_publicacion'] if libro['fecha_publicacion'] else "Sin fecha de publicación"
             texto = f"{libro['titulo'].upper()}\n{libro['autor']} ({fecha_publicacion})"
 
@@ -123,21 +122,36 @@ class VentanaPrincipal(ctk.CTk):
             imagen_label.bind("<Leave>", on_leave)
 
             cover_id = libro.get("cover_id")
-            ruta_base = f"mi_biblio_app/portadas/{cover_id}"
-            for ext in [".jpg", ".png", ".jpeg"]:
-                ruta = ruta_base + ext
-                if os.path.exists(ruta):
-                    try:
-                        imagen_local = Image.open(ruta).resize((100, 150))
-                        imagen = ctk.CTkImage(light_image=imagen_local, size=(100, 150))
-                        imagen_label.configure(image=imagen)
-                        break
-                    except Exception as e:
-                        print("Error cargando portada local:", e)
+            if cover_id:
+                if cover_id.endswith((".jpg", ".png", ".jpeg")):
+                    ruta = os.path.join("mi_biblio_app", "portadas", cover_id)
+                    if os.path.exists(ruta):
+                        try:
+                            imagen_local = Image.open(ruta).resize((100, 150))
+                            imagen = ctk.CTkImage(light_image=imagen_local, size=(100, 150))
+                            imagen_label.configure(image=imagen)
+                        except Exception as e:
+                            print("Error cargando portada local:", e)
+                            imagen_label.configure(image=self.imagen_sin_portada)
+                    else:
+                        imagen_label.configure(image=self.imagen_sin_portada)
+                else:
+                    ruta_base = os.path.join("mi_biblio_app", "portadas", cover_id)
+                    for ext in [".jpg", ".png", ".jpeg"]:
+                        ruta = ruta_base + ext
+                        if os.path.exists(ruta):
+                            try:
+                                imagen_local = Image.open(ruta).resize((100, 150))
+                                imagen = ctk.CTkImage(light_image=imagen_local, size=(100, 150))
+                                imagen_label.configure(image=imagen)
+                                break
+                            except Exception as e:
+                                print("Error cargando portada local:", e)
+                                imagen_label.configure(image=self.imagen_sin_portada)
+                    else:
                         imagen_label.configure(image=self.imagen_sin_portada)
             else:
                 imagen_label.configure(image=self.imagen_sin_portada)
-
 
             item_frame.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
             texto_label.bind("<Button-1>", lambda e, l=libro: self.accion_editar_libro(l))
