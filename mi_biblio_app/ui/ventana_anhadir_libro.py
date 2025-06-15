@@ -8,6 +8,7 @@ import threading
 import time
 from tkinter import messagebox
 import os
+from utils.rutas import recurso_absoluto, carpeta_portadas
 
 """
 Ventana modal para buscar libros en una API externa y añadirlos a la base de datos local.
@@ -29,7 +30,7 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
         self.geometry("700x500")
         self.resizable(False, False)
 
-        self.iconbitmap("mi_biblio_app/imagenes/icono.ico")
+        self.iconbitmap(recurso_absoluto("mi_biblio_app/imagenes/icono.ico"))
 
         self.grid_columnconfigure((0, 1, 2), weight=1)
         self.grid_rowconfigure(1, weight=1)
@@ -46,7 +47,7 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
         self.entry_busqueda = ctk.CTkEntry(self, placeholder_text="Buscar por título, autor o ISBN...")
         self.entry_busqueda.grid(row=0, column=1, sticky="ew", padx=10)
 
-        icono_lupa = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/lupa.png"), size=(30, 30))
+        icono_lupa = ctk.CTkImage(light_image=Image.open(recurso_absoluto("mi_biblio_app/imagenes/lupa.png")), size=(30, 30))
         self.boton_buscar = ctk.CTkButton(self, image=icono_lupa, text="", width=50, height=50, corner_radius=15, command=self.buscar_libro)
         self.boton_buscar.grid(row=0, column=2, sticky="e", padx=20)
 
@@ -155,13 +156,13 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
                     im = Image.open(BytesIO(raw_data)).resize((100, 150))
                 except Exception as e:
                     print("Error cargando portada:", e)
-                    im = Image.open("mi_biblio_app/portadas/sin_portada.png").resize((100, 150))
+                    im = Image.open(recurso_absoluto("mi_biblio_app/portadas/sin_portada.png")).resize((100, 150))
 
                 portada = ctk.CTkImage(light_image=im, size=(100, 150))
                 self.after(0, lambda: imagen_label.configure(image=portada))
             threading.Thread(target=cargar_portada, daemon=True).start()
         else:
-            im = Image.open("mi_biblio_app/portadas/sin_portada.png").resize((100, 150))
+            im = Image.open(recurso_absoluto("mi_biblio_app/portadas/sin_portada.png")).resize((100, 150))
             portada = ctk.CTkImage(light_image=im, size=(100, 150))
             imagen_label.configure(image=portada)
         
@@ -180,8 +181,7 @@ class VentanaAnhadirLibro(ctk.CTkToplevel):
                 with urllib.request.urlopen(url) as u:
                     raw_data = u.read()
                 im = Image.open(BytesIO(raw_data))
-                portada_dir = "mi_biblio_app/portadas"
-                os.makedirs(portada_dir, exist_ok=True)
+                portada_dir = carpeta_portadas()
                 portada_path = os.path.join(portada_dir, f"{libro['cover_id']}.jpg")
                 im.save(portada_path)
             except Exception as e:

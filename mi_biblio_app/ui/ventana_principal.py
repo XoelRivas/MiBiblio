@@ -7,6 +7,7 @@ from io import BytesIO
 from ui.ventana_editar_libro import VentanaEditarLibro
 from tkinter import messagebox
 import os
+from utils.rutas import recurso_absoluto, carpeta_portadas
 
 """
 Ventana principal de la aplicación MiBiblio.
@@ -24,9 +25,9 @@ class VentanaPrincipal(ctk.CTk):
 
         self.title("MiBiblio")
         self.geometry("900x600")
-        self.minsize(800, 500)
+        self.minsize(900, 500)
     
-        self.iconbitmap("mi_biblio_app/imagenes/icono.ico")
+        self.iconbitmap(recurso_absoluto("mi_biblio_app/imagenes/icono.ico"))
 
         self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=1)
@@ -52,7 +53,7 @@ class VentanaPrincipal(ctk.CTk):
         self.entry_busqueda = ctk.CTkEntry(self, placeholder_text="Buscar libros por título o autor...")
         self.entry_busqueda.grid(row=0, column=1, padx=10, pady=20, sticky="ew")
 
-        icono_lupa = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/lupa.png"), size=(30, 30))
+        icono_lupa = ctk.CTkImage(light_image=Image.open(recurso_absoluto("mi_biblio_app/imagenes/lupa.png")), size=(30, 30))
         self.boton_buscar = ctk.CTkButton(self, image=icono_lupa, text="", width=50, height=50, corner_radius=15, command=self.accion_buscar)
         self.boton_buscar.grid(row=0, column=2, padx=10, pady=20)
 
@@ -60,7 +61,7 @@ class VentanaPrincipal(ctk.CTk):
         self.frame_libros.grid(row=1, column=0, columnspan=2, padx=20, pady=(0, 10), sticky="nsew")
         self.grid_rowconfigure(1, weight=1)
 
-        icono_mas = ctk.CTkImage(light_image=Image.open("mi_biblio_app/imagenes/plus.png"), size=(20, 20))
+        icono_mas = ctk.CTkImage(light_image=Image.open(recurso_absoluto("mi_biblio_app/imagenes/plus.png")), size=(20, 20))
         self.boton_anhadir = ctk.CTkButton(
             self, 
             image=icono_mas, text="", 
@@ -69,7 +70,7 @@ class VentanaPrincipal(ctk.CTk):
             corner_radius=15)
         self.boton_anhadir.place(relx=1.0, rely=1.0, x=-20, y=-20, anchor="se")
 
-        self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open("mi_biblio_app/portadas/sin_portada.png"), size=(100, 150))
+        self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open(recurso_absoluto("mi_biblio_app/portadas/sin_portada.png")), size=(100, 150))
 
         self.mostrar_libros(self.libros)
 
@@ -152,7 +153,7 @@ class VentanaPrincipal(ctk.CTk):
             cover_id = libro.get("cover_id")
             if cover_id:
                 if cover_id.endswith((".jpg", ".png", ".jpeg")):
-                    ruta = os.path.join("mi_biblio_app", "portadas", cover_id)
+                    ruta = os.path.join(carpeta_portadas(), cover_id)
                     if os.path.exists(ruta):
                         try:
                             imagen_local = Image.open(ruta).resize((100, 150))
@@ -164,19 +165,21 @@ class VentanaPrincipal(ctk.CTk):
                     else:
                         imagen_label.configure(image=self.imagen_sin_portada)
                 else:
-                    ruta_base = os.path.join("mi_biblio_app", "portadas", cover_id)
+                    # Buscar en carpeta_portadas con varias extensiones
+                    encontrado = False
                     for ext in [".jpg", ".png", ".jpeg"]:
-                        ruta = ruta_base + ext
+                        ruta = os.path.join(carpeta_portadas(), cover_id + ext)
                         if os.path.exists(ruta):
                             try:
                                 imagen_local = Image.open(ruta).resize((100, 150))
                                 imagen = ctk.CTkImage(light_image=imagen_local, size=(100, 150))
                                 imagen_label.configure(image=imagen)
+                                encontrado = True
                                 break
                             except Exception as e:
                                 print("Error cargando portada local:", e)
                                 imagen_label.configure(image=self.imagen_sin_portada)
-                    else:
+                    if not encontrado:
                         imagen_label.configure(image=self.imagen_sin_portada)
             else:
                 imagen_label.configure(image=self.imagen_sin_portada)

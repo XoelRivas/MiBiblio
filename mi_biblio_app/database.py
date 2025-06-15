@@ -1,11 +1,12 @@
 import sqlite3
+from utils.rutas import recurso_absoluto
 
 """
 Crea todas las tablas necesarias en la base de datos si no existen.
 Incluye tablas para autores, géneros, editoriales, libros y las tablas de relación.
 """
 def crear_tablas():
-    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    conn = sqlite3.connect(recurso_absoluto("mi_biblio_app/miBiblio.db"))
     cursor = conn.cursor()
 
     # Tabla de autores
@@ -108,7 +109,7 @@ Si no se pasan conexión y cursor, los crea y los cierra internamente.
 def actualizar_libro(libro, id_libro, id_editorial=None, ids_autores=None, ids_generos=None, conn=None, cursor=None):
     cerrar = False
     if conn is None or cursor is None:
-        conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+        conn = sqlite3.connect(recurso_absoluto("mi_biblio_app/miBiblio.db"))
         cursor = conn.cursor()
         cerrar = True
 
@@ -175,7 +176,7 @@ Elimina un libro y, si corresponde, elimina autores, géneros y editorial asocia
 que hayan quedado huérfanos (sin ningún libro relacionado).
 """
 def eliminar_libro(id_libro):
-    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    conn = sqlite3.connect(recurso_absoluto("mi_biblio_app/miBiblio.db"))
     cursor = conn.cursor()
     cursor.execute("PRAGMA foreign_keys = ON") # Activa las claves foráneas
 
@@ -228,7 +229,7 @@ Permite reutilizar una conexión/cursor existente.
 def insertar_editorial(nombre, conn=None, cursor=None):
     cerrar = False
     if conn is None or cursor is None:
-        conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+        conn = sqlite3.connect(recurso_absoluto("mi_biblio_app/miBiblio.db"))
         cursor = conn.cursor()
         cerrar = True
 
@@ -258,7 +259,7 @@ def insertar_autor(nombre_completo, conn=None, cursor=None):
 
     cerrar = False
     if conn is None or cursor is None:
-        conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+        conn = sqlite3.connect(recurso_absoluto("mi_biblio_app/miBiblio.db"))
         cursor = conn.cursor()
         cerrar = True
 
@@ -287,7 +288,7 @@ Permite reutilizar una conexión/cursor existente.
 def insertar_libro(libro, id_editorial=None, conn=None, cursor=None):
     cerrar = False
     if conn is None or cursor is None:
-        conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+        conn = sqlite3.connect(recurso_absoluto("mi_biblio_app/miBiblio.db"))
         cursor = conn.cursor()
         cerrar = True
 
@@ -341,7 +342,7 @@ Permite reutilizar una conexión/cursor existente.
 def insertar_genero(nombre_genero, conn=None, cursor=None):
     cerrar = False
     if conn is None or cursor is None:
-        conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+        conn = sqlite3.connect(recurso_absoluto("mi_biblio_app/miBiblio.db"))
         cursor = conn.cursor()
         cerrar = True
 
@@ -368,7 +369,7 @@ def insertar_genero(nombre_genero, conn=None, cursor=None):
 Relaciona un libro con un autor en la tabla de relación muchos a muchos.
 """
 def relacionar_libro_autor(id_libro, id_autor):
-    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    conn = sqlite3.connect(recurso_absoluto("mi_biblio_app/miBiblio.db"))
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -382,7 +383,7 @@ def relacionar_libro_autor(id_libro, id_autor):
 Relaciona un libro con un género en la tabla de relación muchos a muchos.
 """
 def relacionar_libro_genero(id_libro, id_genero):
-    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    conn = sqlite3.connect(recurso_absoluto("mi_biblio_app/miBiblio.db"))
     cursor = conn.cursor()
 
     cursor.execute("""
@@ -398,7 +399,7 @@ Recupera todos los libros guardados en la base de datos, incluyendo información
 de autores, géneros y editorial, agrupando los autores y géneros por libro.
 """
 def obtener_libros_guardados():
-    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    conn = sqlite3.connect(recurso_absoluto("mi_biblio_app/miBiblio.db"))
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 
@@ -431,7 +432,7 @@ Busca libros cuyo título o autor coincida (parcialmente, sin distinción de may
 con el texto proporcionado.
 """
 def buscar_libros_por_titulo_o_autor(texto):
-    conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+    conn = sqlite3.connect(recurso_absoluto("mi_biblio_app/miBiblio.db"))
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
 

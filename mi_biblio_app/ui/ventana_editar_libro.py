@@ -9,6 +9,7 @@ from datetime import datetime
 import tkinter as tk
 import sqlite3
 import os
+from utils.rutas import recurso_absoluto, carpeta_portadas
 
 """
 Clase que implementa un campo de entrada de fecha personalizado.
@@ -110,10 +111,10 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         self.campos = {}
         self.entradas_autor = []
         self.entradas_genero = []
-        self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open("mi_biblio_app/portadas/sin_portada.png"), size=(120, 180))
+        self.imagen_sin_portada = ctk.CTkImage(light_image=Image.open(recurso_absoluto("mi_biblio_app/portadas/sin_portada.png")), size=(120, 180))
         self.modo_edicion = modo_edicion
         
-        self.iconbitmap("mi_biblio_app/imagenes/icono.ico")
+        self.iconbitmap(recurso_absoluto("mi_biblio_app/imagenes/icono.ico"))
 
         self.crear_widgets()
 
@@ -276,7 +277,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         respuesta = self.dialogo_confirmacion("Cambiar portada", "¿Desea añadir una portada?")
         if not respuesta:
             return
-        
+
         ruta_imagen = filedialog.askopenfilename(
             title="Seleccionar imagen de portada",
             filetypes=[
@@ -290,13 +291,12 @@ class VentanaEditarLibro(ctk.CTkToplevel):
 
         if ruta_imagen:
             try:
-                carpeta_imagenes = "mi_biblio_app/portadas"
-                os.makedirs(carpeta_imagenes, exist_ok=True)
-
-                id_libro = self.libro.get("id", "temporal")
-                nombre_archivo = f"portada_{id_libro}.png"
+                carpeta_imagenes = carpeta_portadas()
+                if self.libro and self.libro.get("id"):
+                    nombre_archivo = f"portada_{self.libro.get('id')}.png"
+                else:
+                    nombre_archivo = "portada_temporal.png"
                 destino = os.path.join(carpeta_imagenes, nombre_archivo)
-
                 imagen = Image.open(ruta_imagen)
                 imagen = imagen.resize((120, 180))
                 imagen.save(destino)
@@ -413,9 +413,8 @@ class VentanaEditarLibro(ctk.CTkToplevel):
         imagen_cargada = False
 
         if cover_id:
-            ruta_base = f"mi_biblio_app/portadas/{cover_id}"
-            for ext in [".jpg", ".png", ".jpeg", ".png"]:
-                ruta = ruta_base if ruta_base.endswith(ext) else ruta_base + ext
+            for ext in [".jpg", ".png", ".jpeg"]:
+                ruta = os.path.join(carpeta_portadas(), cover_id if cover_id.endswith(ext) else cover_id + ext)
                 if os.path.exists(ruta):
                     try:
                         imagen_local = Image.open(ruta)
@@ -472,7 +471,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
             datos_actualizados["cover_id"] = self.imagen_personalizada
 
         try:
-            conn = sqlite3.connect("mi_biblio_app/miBiblio.db")
+            conn = sqlite3.connect(recurso_absoluto("mi_biblio_app/miBiblio.db"))
             cursor = conn.cursor()
 
             id_editorial = None
@@ -487,6 +486,17 @@ class VentanaEditarLibro(ctk.CTkToplevel):
                 messagebox.showinfo("Éxito", "Libro actualizado correctamente.", parent=self)
             else:
                 id_libro = insertar_libro(datos_actualizados, id_editorial, conn=conn, cursor=cursor)
+
+                if hasattr(self, "imagen_personalizada") and self.imagen_personalizada == "portada_temporal.png":
+                    carpeta = carpeta_portadas()
+                    origen = os.path.join(carpeta, "portada_temporal.png")
+                    destino = os.path.join(carpeta, f"portada_{id_libro}.png")
+                    if os.path.exists(origen):
+                        os.rename(origen, destino)
+                        datos_actualizados["cover_id"] = f"portada_{id_libro}.png"
+                        cursor.execute("UPDATE libros SET cover_id = ? WHERE id = ?", (datos_actualizados["cover_id"], id_libro))
+                        conn.commit()
+                    self.imagen_personalizada = datos_actualizados["cover_id"]
 
                 for id_autor in ids_autores:
                     cursor.execute("INSERT OR IGNORE INTO libros_autores (id_libro, id_autor) VALUES (?, ?)", (id_libro, id_autor))
@@ -519,7 +529,7 @@ class VentanaEditarLibro(ctk.CTkToplevel):
                 if cover_id:
                     posibles_extensiones = [".png", ".jpg", ".jpeg"]
                     for ext in posibles_extensiones:
-                        ruta_portada = os.path.join("mi_biblio_app", "portadas", f"{cover_id}{ext}")
+                        ruta_portada = os.path.join(carpeta_portadas(), cover_id if cover_id.endswith(ext) else cover_id + ext)
                         if os.path.exists(ruta_portada):
                             os.remove(ruta_portada)
                             break

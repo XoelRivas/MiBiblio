@@ -5,7 +5,7 @@ a = Analysis(
     ['mi_biblio_app\\main.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('mi_biblio_app/imagenes/lupa.png', 'mi_biblio_app/imagenes'), ('mi_biblio_app/imagenes/icono.ico', 'mi_biblio_app/imagenes'), ('mi_biblio_app/imagenes/plus.png', 'mi_biblio_app/imagenes'), ('mi_biblio_app/portadas/sin_portada.png', 'mi_biblio_app/portadas')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
